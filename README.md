@@ -1,7 +1,5 @@
 # Media Sorter - AI-Powered Photo Organization
 
-## 🎯 *```
-
 ## **Key Features**
 
 - **🤖 Local AI Processing** - All analysis happens on your M1 Pro, no internet required
@@ -95,14 +93,14 @@ The system understands natural language and synonyms:
 
 ## **Project Status: ✅ COMPLETE & PRODUCTION READY**
 
-Your media sorting tool successfully:
+The media sorting tool successfully:
 1. ✅ Identified dog photos in test batch
-2. ✅ Created oliver directory automatically  
+2. ✅ Created new directory automatically  
 3. ✅ Copied files safely with user confirmation
 4. ✅ Handled various image formats correctly
 5. ✅ Provided detailed logging and progress tracking
 
-**Ready to sort your entire photo collection!** 🚀
+**Ready to sort your entire photo collection!** 
 
 ## Features
 
