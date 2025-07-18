@@ -124,7 +124,8 @@ python main.py /path/to/photos "find vacation photos" --max-files 10 --dry-run
 ### Options
 - `--dry-run`: Preview without copying files
 - `--max-files N`: Limit processing to N files (good for testing)
-- `--confidence-threshold 0.8`: Adjust matching sensitivity (0.0-1.0)
+- `--selection-method`: Choose file selection strategy
+- `--random-seed`: Set seed for reproducible random selection
 - `--target-dir name`: Specify target directory name
 
 ## Examples
@@ -141,36 +142,38 @@ python main.py /G-photos "photos with people" --target-dir people
 
 # Test run first
 python main.py /G-photos "beach vacation photos" --dry-run --max-files 20
+
+# Random sample testing
+python main.py /G-photos "dog photos" --selection-method random --max-files 50 --dry-run
 ```
 
 ## Project Structure
 
 ```
 media_sorter/
-├── main.py              # Main CLI application
+├── main.py                 # Main CLI application
+├── analyze_collection.py   # Collection analysis utility
 ├── models/
-│   └── vision_model.py  # Moondream2 integration
+│   └── vision_model.py     # Moondream2 integration
 ├── utils/
-│   ├── file_manager.py  # File operations
-│   └── logger.py        # Logging utilities
-├── config.py           # Configuration
-└── requirements.txt    # Python dependencies
+│   ├── file_manager.py     # File operations
+│   └── logger.py           # Logging utilities
+└── requirements.txt        # Python dependencies
 ```
 
 ## How It Works
 
 1. **Scan**: Discovers all media files in source directory
 2. **Analyze**: Moondream2 describes each image/video 
-3. **Match**: Compares descriptions against your prompt
-4. **Filter**: Only files above confidence threshold
-5. **Preview**: Shows matches before copying
-6. **Copy**: Safely copies files to new directory
+3. **Match**: Compares descriptions against your prompt using pure AI analysis
+4. **Preview**: Shows matches before copying
+5. **Copy**: Safely copies files to new directory
 
 ## Performance
 
-- **Speed**: ~2-5 images/second on M1 Pro
-- **Memory**: ~3GB for Moondream2 model
-- **Accuracy**: Good for common objects, scenes, activities
+- **Speed**: ~8-10 seconds per image on M1 Pro
+- **Memory**: ~4-6GB for Moondream2 model + processing
+- **Accuracy**: High accuracy with pure AI decision making
 
 ## Safety Features
 
@@ -184,13 +187,13 @@ media_sorter/
 
 **Model download fails:**
 - Check internet connection
-- Ensure ~3GB free space
+- Ensure ~4GB free space
 
 **Out of memory:**
 - Close other applications
-- Use smaller batch sizes
+- Use smaller batch sizes with `--max-files`
 
 **Poor matching:**
-- Adjust confidence threshold
 - Try more specific prompts
 - Use dry-run to test prompts
+- Check logs for confidence scores
