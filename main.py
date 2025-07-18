@@ -82,27 +82,21 @@ def main(source_dir, prompt, target_dir, dry_run, max_files, selection_method, r
             logger.info(f"Analyzing file {i}/{len(media_files)}: {Path(file_path).name}")
             
             try:
-                # Use enhanced analysis for better accuracy
-                result = vision_model.enhanced_matches_prompt(file_path, prompt)
+                # Use simple analysis - copy ALL matches
+                result = vision_model.simple_matches_prompt(file_path, prompt)
                 
                 description = result['description']
-                confidence = result['final_confidence']
+                is_match = result['is_match']
+                matched_keywords = result['matched_keywords']
                 
                 logger.info(f"  Description: {description}")
-                logger.info(f"  Basic confidence: {result['basic_confidence']:.2f}")
-                logger.info(f"  Enhanced confidence: {result['enhanced_confidence']:.2f}")
                 
-                # Trust the model's analysis completely - no artificial threshold
-                if confidence > 0:
-                    matching_files.append((file_path, confidence, description))
-                    logger.info(f"  ✓ Match found (final confidence: {confidence:.2f})")
-                    
-                    # Show validation details
-                    if result.get('validation_results'):
-                        for keyword, validation in result['validation_results'].items():
-                            logger.info(f"    {keyword}: detected={validation['detected']}, confidence={validation['confidence']:.2f}")
+                # Copy ALL matches regardless of confidence
+                if is_match:
+                    matching_files.append((file_path, description, matched_keywords))
+                    logger.info(f"  ✓ Match found! Keywords: {', '.join(matched_keywords)}")
                 else:
-                    logger.info(f"  ✗ No match (final confidence: {confidence:.2f})")
+                    logger.info(f"  ✗ No match found")
                     
             except Exception as e:
                 logger.error(f"  Error analyzing {file_path}: {e}")
@@ -116,8 +110,8 @@ def main(source_dir, prompt, target_dir, dry_run, max_files, selection_method, r
         
         # Show preview
         logger.info("\\nMatching files:")
-        for file_path, confidence, description in matching_files:
-            logger.info(f"  {Path(file_path).name} (confidence: {confidence:.2f})")
+        for file_path, description, matched_keywords in matching_files:
+            logger.info(f"  {Path(file_path).name} - Keywords: {', '.join(matched_keywords)}")
             logger.debug(f"    Description: {description}")
         
         if dry_run:
@@ -135,7 +129,7 @@ def main(source_dir, prompt, target_dir, dry_run, max_files, selection_method, r
             logger.info(f"Copying files to {target_path}")
             
             success_count = 0
-            for file_path, confidence, _ in matching_files:
+            for file_path, description, matched_keywords in matching_files:
                 try:
                     file_manager.copy_file(file_path, target_path)
                     success_count += 1

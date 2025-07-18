@@ -82,63 +82,50 @@ class MoondreamVisionModel:
             logger.error(f"Error analyzing image {image_path}: {e}")
             return ""
     
-    def validate_detection(self, image_path, object_query):
+    def simple_matches_prompt(self, image_path, user_prompt):
         """
-        Validate a specific object detection with multiple questions
+        Simple matching without confidence scoring - matches ANY detection
         
         Args:
             image_path: Path to the image file
-            object_query: Object to validate (e.g., "dog", "person", "car")
+            user_prompt: User's sorting criteria
             
         Returns:
-            dict: Validation results with confidence scores
+            dict: Simple results with basic matching
         """
         try:
-            image = Image.open(image_path).convert('RGB')
-            enc_image = self.model.encode_image(image)
+            # Get basic description
+            description = self.analyze_image(image_path)
             
-            # Ask multiple neutral validation questions
-            questions = [
-                f"What animals do you see in this image?",
-                f"List all the objects you can identify in this photo.",
-                f"Describe what is in the foreground of this image.",
-                f"What living things are present in this image?"
-            ]
+            # Extract keywords from prompt
+            keywords = self._extract_keywords(user_prompt)
             
-            responses = {}
-            for question in questions:
-                response = self.model.answer_question(enc_image, question, self.tokenizer)
-                responses[question] = response.strip().lower()
+            # Simple keyword matching - ANY match counts
+            description_lower = description.lower()
+            matches_found = []
             
-            # Check if the object is mentioned in neutral responses
-            object_mentions = 0
-            total_responses = len(responses)
+            for keyword in keywords:
+                if keyword in description_lower:
+                    matches_found.append(keyword)
             
-            for response in responses.values():
-                # Look for the object or its synonyms in the response
-                if object_query.lower() in response:
-                    object_mentions += 1
-                # Check for related terms
-                elif object_query == 'dog' and any(term in response for term in ['puppy', 'canine']):
-                    object_mentions += 1
-                elif object_query == 'cat' and any(term in response for term in ['kitten', 'feline']):
-                    object_mentions += 1
-            
-            # Calculate validation confidence based on mentions
-            confidence = object_mentions / total_responses
-            detected = confidence > 0.5
+            # Return True if ANY keyword matches
+            is_match = len(matches_found) > 0
             
             return {
-                'detected': detected,
-                'confidence': confidence,
-                'responses': responses,
-                'mentions': object_mentions,
-                'total_responses': total_responses
+                'description': description,
+                'is_match': is_match,
+                'matched_keywords': matches_found,
+                'all_keywords': keywords
             }
             
         except Exception as e:
-            logger.error(f"Error validating detection in {image_path}: {e}")
-            return {'detected': False, 'confidence': 0.0, 'error': str(e)}
+            logger.error(f"Error analyzing {image_path}: {e}")
+            return {
+                'description': f"Error: {e}",
+                'is_match': False,
+                'matched_keywords': [],
+                'all_keywords': []
+            }
     
     def matches_prompt(self, description, user_prompt):
         """
@@ -149,84 +136,24 @@ class MoondreamVisionModel:
             user_prompt: User's sorting criteria (e.g., "sort all dog photos")
             
         Returns:
-            float: Confidence score (0.0 to 1.0)
+            bool: True if ANY keyword matches, False otherwise
         """
         # Extract key terms from user prompt
         prompt_keywords = self._extract_keywords(user_prompt)
         
         if not prompt_keywords:
-            return 0.0
+            return False
         
-        # Simple keyword matching with confidence scoring
+        # Simple keyword matching - ANY match counts
         description_lower = description.lower()
-        matches = 0
-        total_keywords = len(prompt_keywords)
         
         for keyword in prompt_keywords:
             if keyword in description_lower:
-                matches += 1
-                # Bonus for exact matches
-                if f" {keyword} " in f" {description_lower} ":
-                    matches += 0.5
+                logger.debug(f"Match found: '{keyword}' in description")
+                return True
         
-        confidence = min(matches / total_keywords, 1.0)
-        
-        logger.debug(f"Prompt keywords: {prompt_keywords}")
-        logger.debug(f"Description: {description}")
-        logger.debug(f"Confidence: {confidence:.2f}")
-        
-        return confidence
-    
-    def enhanced_matches_prompt(self, image_path, user_prompt):
-        """
-        Enhanced matching with validation for higher accuracy
-        
-        Args:
-            image_path: Path to the image file
-            user_prompt: User's sorting criteria
-            
-        Returns:
-            dict: Enhanced results with validation
-        """
-        # First get basic description
-        description = self.analyze_image(image_path)
-        basic_confidence = self.matches_prompt(description, user_prompt)
-        
-        # If basic confidence is high, validate with targeted questions
-        if basic_confidence >= 0.5:
-            keywords = self._extract_keywords(user_prompt)
-            
-            validation_results = {}
-            for keyword in keywords:
-                validation = self.validate_detection(image_path, keyword)
-                validation_results[keyword] = validation
-            
-            # Calculate enhanced confidence based on validation
-            validated_keywords = 0
-            total_keywords = len(keywords)
-            
-            for keyword, validation in validation_results.items():
-                if validation['detected'] and validation['confidence'] >= 0.5:
-                    validated_keywords += 1
-            
-            enhanced_confidence = validated_keywords / total_keywords if total_keywords > 0 else 0.0
-            
-            return {
-                'description': description,
-                'basic_confidence': basic_confidence,
-                'enhanced_confidence': enhanced_confidence,
-                'validation_results': validation_results,
-                'final_confidence': enhanced_confidence
-            }
-        else:
-            enhanced_confidence = basic_confidence
-            return {
-                'description': description,
-                'basic_confidence': basic_confidence,
-                'enhanced_confidence': enhanced_confidence,
-                'validation_results': {},
-                'final_confidence': enhanced_confidence
-            }
+        logger.debug(f"No matches found for keywords: {prompt_keywords}")
+        return False
     
     def _extract_keywords(self, prompt):
         """

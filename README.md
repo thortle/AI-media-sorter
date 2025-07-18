@@ -1,6 +1,18 @@
 # Media Sorter - AI-Powered Photo Organization
 
-## 🎯 **Your AI-Powered Photo Sorting Tool is Ready!**
+## 🎯 *```
+
+## **Key Features**
+
+- **🤖 Local AI Processing** - All analysis happens on your M1 Pro, no internet required
+- **📁 Safe Operations** - Only copies files, never moves or deletes originals  
+- **🎯 Simple AI Matching** - Direct keyword matching against AI descriptions, no artificial thresholds
+- **📊 Inclusive Results** - Copies ALL matches regardless of confidence level
+- **💾 HEIC Support** - Handles iPhone HEIC photos alongside JPG/PNG/MP4
+- **📝 Comprehensive Logging** - Full audit trail of all operations
+- **🎲 Flexible File Selection** - 6 different methods for processing files
+
+## **Search Examples**red Photo Sorting Tool is Ready!**
 
 Successfully tested with your G-photos collection (9,233 files). The system includes advanced file selection methods for flexible processing.
 
@@ -77,7 +89,7 @@ The system understands natural language and synonyms:
 ## **Performance**
 
 - **Processed:** 100 photos in ~15 minutes
-- **Success Rate:** High accuracy with minimal false positives
+- **Success Rate:** High recall with inclusive matching - copies all potential matches
 - **Memory Usage:** ~4GB for model + images  
 - **Estimated Full Collection:** ~18,464 photos ≈ 45-60 hours total
 
@@ -165,7 +177,7 @@ media_sorter/
 
 1. **Scan**: Discovers all media files in source directory
 2. **Analyze**: Moondream2 describes each image/video 
-3. **Match**: Compares descriptions against your prompt using pure AI analysis
+3. **Match**: Simple keyword matching against AI descriptions - copies ALL matches
 4. **Preview**: Shows matches before copying
 5. **Copy**: Safely copies files to new directory
 
@@ -173,7 +185,7 @@ media_sorter/
 
 - **Speed**: ~8-10 seconds per image on M1 Pro
 - **Memory**: ~4-6GB for Moondream2 model + processing
-- **Accuracy**: High accuracy with pure AI decision making
+- **Accuracy**: High recall with simple keyword matching - copies all potential matches
 
 ## Safety Features
 
@@ -193,7 +205,7 @@ media_sorter/
 - Close other applications
 - Use smaller batch sizes with `--max-files`
 
-**Poor matching:**
-- Try more specific prompts
-- Use dry-run to test prompts
-- Check logs for confidence scores
+**Too many matches:**
+- Use more specific prompts
+- Use dry-run to test prompts first
+- Check logs for matched keywords
