@@ -20,6 +20,15 @@ class MediaFileManager:
         '.mp4', '.mov', '.avi', '.mkv', '.m4v', '.webm'
     }
     
+    # Image-only extensions (excluding videos)
+    IMAGE_EXTENSIONS = {
+        '.jpg', '.jpeg', '.png', '.heic', '.heif', '.tiff', '.tif'
+    }
+    
+    VIDEO_EXTENSIONS = {
+        '.mp4', '.mov', '.avi', '.mkv', '.m4v', '.webm'
+    }
+    
     def __init__(self, source_directory: str):
         """
         Initialize file manager
@@ -33,7 +42,7 @@ class MediaFileManager:
         
         logger.info(f"Initialized file manager for: {self.source_dir}")
     
-    def discover_media_files(self, max_files: Optional[int] = None, selection_method: str = 'filesystem', random_seed: Optional[int] = None) -> List[str]:
+    def discover_media_files(self, max_files: Optional[int] = None, selection_method: str = 'filesystem', random_seed: Optional[int] = None, images_only: bool = False) -> List[str]:
         """
         Discover media files with different selection methods
         
@@ -41,6 +50,7 @@ class MediaFileManager:
             max_files: Maximum number of files to return (for testing)
             selection_method: 'filesystem', 'random', 'newest', 'oldest', 'name_asc', 'name_desc'
             random_seed: Random seed for reproducible random selection
+            images_only: If True, only return image files (exclude videos)
             
         Returns:
             List of file paths
@@ -59,7 +69,8 @@ class MediaFileManager:
                 continue
             
             # Check if it's a supported media file
-            if file_path.suffix.lower() in self.SUPPORTED_EXTENSIONS:
+            extensions_to_check = self.IMAGE_EXTENSIONS if images_only else self.SUPPORTED_EXTENSIONS
+            if file_path.suffix.lower() in extensions_to_check:
                 try:
                     # Get file modification time for sorting
                     mod_time = file_path.stat().st_mtime
@@ -91,7 +102,8 @@ class MediaFileManager:
             media_files = media_files[:max_files]
             logger.info(f"Reached max files limit: {max_files}")
         
-        logger.info(f"Found {len(media_files)} media files using '{selection_method}' selection")
+        file_type = "image" if images_only else "media"
+        logger.info(f"Found {len(media_files)} {file_type} files using '{selection_method}' selection")
         return media_files
     
     def create_target_directory(self, target_name: str) -> Path:
@@ -196,3 +208,25 @@ class MediaFileManager:
                     logger.info(f"Removed empty directory: {dirpath}")
             except OSError:
                 pass  # Directory not empty or permission error
+    
+    def write_description(self, descriptions_file: str, filename: str, description: str):
+        """
+        Write a filename and description pair to a file
+        
+        Args:
+            descriptions_file: Path to the descriptions file
+            filename: Name of the media file
+            description: AI-generated description
+        """
+        try:
+            descriptions_path = Path(descriptions_file)
+            
+            # Create the file if it doesn't exist, or append if it does
+            with open(descriptions_path, 'a', encoding='utf-8') as f:
+                f.write(f"{filename} - Description: {description}\n")
+                
+            logger.debug(f"Wrote description for {filename} to {descriptions_file}")
+            
+        except Exception as e:
+            logger.error(f"Failed to write description for {filename}: {e}")
+            raise

@@ -19,36 +19,33 @@ from utils.logger import setup_logger
 
 @click.command()
 @click.argument('source_dir', type=click.Path(exists=True, file_okay=False, dir_okay=True))
-@click.argument('prompt', type=str)
-@click.option('--target-dir', type=str, help='Target directory name (will be created in source_dir)')
-@click.option('--dry-run', is_flag=True, help='Preview operations without copying files')
 @click.option('--max-files', type=int, default=None, help='Limit number of files to process (for testing)')
 @click.option('--selection-method', 
               type=click.Choice(['filesystem', 'random', 'newest', 'oldest', 'name_asc', 'name_desc']), 
               default='filesystem', 
               help='Method for selecting files to process')
 @click.option('--random-seed', type=int, help='Random seed for reproducible random selection')
-def main(source_dir, prompt, target_dir, dry_run, max_files, selection_method, random_seed):
+@click.option('--descriptions-file', type=str, default='descriptions.txt', help='File to save descriptions to')
+def main(source_dir, max_files, selection_method, random_seed, descriptions_file):
     """
-    Sort media files using AI-powered content analysis.
+    Generate AI-powered descriptions for all images in a directory.
     
     Examples:
-    python main.py /path/to/G-photos "sort all dog photos" --target-dir oliver
-    python main.py /path/to/G-photos "find vacation photos" --dry-run
+    python main.py /path/to/G-photos
+    python main.py /path/to/G-photos --max-files 100 --descriptions-file my_descriptions.txt
+    python main.py /path/to/G-photos --selection-method random --random-seed 12345
     """
     
     # Setup logging
     logger = setup_logger()
     
-    logger.info(f"Starting media sorting with prompt: '{prompt}'")
+    logger.info(f"Starting description generation for images")
+    logger.info(f"Descriptions will be saved to: {descriptions_file}")
     logger.info(f"Source directory: {source_dir}")
     logger.info(f"Selection method: {selection_method}")
     
     if max_files:
         logger.info(f"Processing limit: {max_files} files")
-    
-    if dry_run:
-        logger.info("DRY RUN mode - no files will be copied")
     
     try:
         # Initialize components
@@ -58,88 +55,55 @@ def main(source_dir, prompt, target_dir, dry_run, max_files, selection_method, r
         logger.info("Initializing file manager...")
         file_manager = MediaFileManager(source_dir)
         
-        # Discover media files with specified selection method
-        logger.info("Scanning for media files...")
+        # Discover media files with specified selection method (images only)
+        logger.info("Scanning for image files...")
         media_files = file_manager.discover_media_files(
             max_files=max_files, 
             selection_method=selection_method,
-            random_seed=random_seed
+            random_seed=random_seed,
+            images_only=True  # Always process only images
         )
-        logger.info(f"Found {len(media_files)} media files to analyze")
+        logger.info(f"Found {len(media_files)} image files to analyze")
         
         if selection_method == 'random' and random_seed:
             logger.info(f"Random seed: {random_seed} (use same seed for reproducible results)")
         
         if len(media_files) == 0:
-            logger.warning("No media files found!")
+            logger.warning("No image files found!")
             return
         
-        # Analyze files
-        logger.info("Starting content analysis...")
-        matching_files = []
+        # Create/clear the descriptions file
+        descriptions_path = Path(descriptions_file)
+        if descriptions_path.exists():
+            logger.info(f"Appending to existing descriptions file: {descriptions_file}")
+        else:
+            logger.info(f"Creating new descriptions file: {descriptions_file}")
+            # Create empty file
+            descriptions_path.touch()
+        
+        # Generate descriptions
+        logger.info("Starting description generation...")
         
         for i, file_path in enumerate(media_files, 1):
             logger.info(f"Analyzing file {i}/{len(media_files)}: {Path(file_path).name}")
             
             try:
-                # Use simple analysis - copy ALL matches
-                result = vision_model.simple_matches_prompt(file_path, prompt)
-                
+                # Generate description only
+                result = vision_model.simple_matches_prompt(file_path, "describe this image")
                 description = result['description']
-                is_match = result['is_match']
-                matched_keywords = result['matched_keywords']
                 
+                # Write to descriptions file
+                file_manager.write_description(descriptions_file, Path(file_path).name, description)
                 logger.info(f"  Description: {description}")
                 
-                # Copy ALL matches regardless of confidence
-                if is_match:
-                    matching_files.append((file_path, description, matched_keywords))
-                    logger.info(f"  ✓ Match found! Keywords: {', '.join(matched_keywords)}")
-                else:
-                    logger.info(f"  ✗ No match found")
-                    
             except Exception as e:
                 logger.error(f"  Error analyzing {file_path}: {e}")
                 continue
         
-        logger.info(f"Found {len(matching_files)} matching files")
-        
-        if len(matching_files) == 0:
-            logger.info("No files matched the criteria")
-            return
-        
-        # Show preview
-        logger.info("\\nMatching files:")
-        for file_path, description, matched_keywords in matching_files:
-            logger.info(f"  {Path(file_path).name} - Keywords: {', '.join(matched_keywords)}")
-            logger.debug(f"    Description: {description}")
-        
-        if dry_run:
-            logger.info("\\nDry run complete - no files were copied")
-            return
-        
-        # Confirm operation
-        if not click.confirm(f"\\nCopy {len(matching_files)} files to '{target_dir}'?"):
-            logger.info("Operation cancelled")
-            return
-        
-        # Copy files
-        if target_dir:
-            target_path = file_manager.create_target_directory(target_dir)
-            logger.info(f"Copying files to {target_path}")
-            
-            success_count = 0
-            for file_path, description, matched_keywords in matching_files:
-                try:
-                    file_manager.copy_file(file_path, target_path)
-                    success_count += 1
-                    logger.info(f"  ✓ Copied {Path(file_path).name}")
-                except Exception as e:
-                    logger.error(f"  ✗ Failed to copy {Path(file_path).name}: {e}")
-            
-            logger.info(f"\\nOperation complete: {success_count}/{len(matching_files)} files copied")
-        else:
-            logger.error("Target directory not specified")
+        # Completion message
+        logger.info(f"\nDescription generation complete!")
+        logger.info(f"Descriptions saved to: {descriptions_file}")
+        logger.info(f"Total files processed: {len(media_files)}")
     
     except Exception as e:
         logger.error(f"Fatal error: {e}")

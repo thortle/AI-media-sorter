@@ -74,9 +74,48 @@ class MoondreamVisionModel:
             
             # Generate description using Moondream2
             enc_image = self.model.encode_image(image)
-            description = self.model.answer_question(enc_image, "Describe this image in detail.", self.tokenizer)
             
-            return description.strip()
+            # Try multiple prompts to get complete descriptions
+            prompts = [
+                "Describe this image in complete sentences.",
+                "What do you see in this image? Provide a detailed description.",
+                "Describe this image in detail.",
+            ]
+            
+            best_description = ""
+            
+            for prompt in prompts:
+                try:
+                    description = self.model.answer_question(enc_image, prompt, self.tokenizer)
+                    description = description.strip()
+                    
+                    # Check if description seems complete (ends with proper punctuation)
+                    if description and (description.endswith('.') or description.endswith('!') or description.endswith('?')):
+                        return description
+                    
+                    # Keep the longest description as backup
+                    if len(description) > len(best_description):
+                        best_description = description
+                        
+                except Exception as e:
+                    logger.debug(f"Prompt '{prompt}' failed: {e}")
+                    continue
+            
+            # If no complete description found, try to complete the best one
+            if best_description:
+                # If description doesn't end properly, try to get a continuation
+                if not best_description.endswith(('.', '!', '?')):
+                    try:
+                        continuation_prompt = f"Complete this description: {best_description}"
+                        continuation = self.model.answer_question(enc_image, continuation_prompt, self.tokenizer)
+                        if continuation and len(continuation.strip()) > len(best_description):
+                            best_description = continuation.strip()
+                    except Exception:
+                        pass
+                        
+                return best_description
+            
+            return ""
             
         except Exception as e:
             logger.error(f"Error analyzing image {image_path}: {e}")

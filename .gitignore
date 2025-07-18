@@ -168,3 +168,9 @@ test_*.png
 *.swp
 *.swo
 *~
+
+# Test files and temporary outputs
+test_*.py
+descriptions.txt
+*_descriptions.txt
+STRUCTURE.md
