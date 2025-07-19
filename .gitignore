@@ -174,3 +174,10 @@ test_*.py
 descriptions.txt
 *_descriptions.txt
 STRUCTURE.md
+
+# Personal scripts and output files
+cleanup_external_drive.sh
+migration_plan.md
+complete_descriptions.txt
+test_descriptions.txt
+descriptions.txt
