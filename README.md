@@ -26,13 +26,13 @@ This tool generates detailed AI-powered descriptions for image collections. Crea
 ### **Basic Usage**
 ```bash
 # Generate descriptions for all images
-python3 main.py "/path/to/your/photos"
+cd description && python3 main.py "/path/to/your/photos"
 
 # Limit to 100 files for testing
-python3 main.py "/path/to/your/photos" --max-files 100
+cd description && python3 main.py "/path/to/your/photos" --max-files 100
 
 # Use random sampling with seed for reproducible results
-python3 main.py "/path/to/your/photos" --selection-method random --random-seed 12345
+cd description && python3 main.py "/path/to/your/photos" --selection-method random --random-seed 12345
 ```
 
 ### **Analyze Your Collection First**
@@ -68,19 +68,19 @@ Options:
 
 ```bash
 # Full-scale processing (production)
-python3 main.py "/Volumes/T7_SSD/G-photos"
+cd description && python3 main.py "/Volumes/T7_SSD/G-photos"
 
 # Test with small sample first
-python3 main.py "/Volumes/T7_SSD/G-photos" --max-files 50
+cd description && python3 main.py "/Volumes/T7_SSD/G-photos" --max-files 50
 
 # Random sampling for unbiased testing
-python3 main.py "/Volumes/T7_SSD/G-photos" --selection-method random --max-files 100 --random-seed 12345
+cd description && python3 main.py "/Volumes/T7_SSD/G-photos" --selection-method random --max-files 100 --random-seed 12345
 
 # Process newest photos first
-python3 main.py "/Volumes/T7_SSD/G-photos" --selection-method newest --max-files 200
+cd description && python3 main.py "/Volumes/T7_SSD/G-photos" --selection-method newest --max-files 200
 
 # Custom output file
-python3 main.py "/Volumes/T7_SSD/G-photos" --descriptions-file custom_descriptions.txt
+cd description && python3 main.py "/Volumes/T7_SSD/G-photos" --descriptions-file custom_descriptions.txt
 ```
 
 ## **Output Format**
@@ -117,20 +117,27 @@ IMG_5678.JPG - Description: Another detailed description...
 
 ```
 media_sorter/
-├── main.py                 # Main CLI application for generating descriptions
-├── analyze_collection.py   # Collection analysis utility
-├── monitor_progress.py     # Progress monitoring utility
-├── check_progress.sh       # Shell script for progress checking
-├── complete_descriptions.txt # Generated descriptions output
-├── models/
-│   ├── __init__.py
-│   └── vision_model.py     # Moondream2 integration for image description
-├── utils/
-│   ├── __init__.py
-│   ├── file_manager.py     # File discovery and selection methods
-│   └── logger.py           # Logging configuration
-├── requirements.txt        # Python dependencies
-└── README.md              # Project documentation
+├── CLAUDE.md                     # Development workflow guidance
+├── README.md                     # Project documentation  
+├── todo.md                       # Project status and planning
+├── requirements.txt              # Python dependencies
+├── description/                  # Phase 1: AI Description Generation
+│   ├── main.py                   # Main CLI application for generating descriptions
+│   ├── analyze_collection.py     # Collection analysis utility
+│   ├── monitor_progress.py       # Progress monitoring utility
+│   ├── check_progress.sh         # Shell script for progress checking
+│   ├── complete_descriptions.txt # Generated descriptions output
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── vision_model.py       # Simplified Moondream2 integration for image description
+│   └── utils/
+│       ├── __init__.py
+│       ├── file_manager.py       # File discovery and selection methods
+│       └── logger.py             # Logging configuration
+└── sorting/                      # Phase 2: Photo Search & Display (In Development)
+    ├── __init__.py
+    └── utils/
+        └── __init__.py
 ```
 
 ## **How It Works**
