@@ -2,7 +2,6 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from PIL import Image
 import logging
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class MoondreamVisionModel:
     """
-    Simplified Moondream2 vision model for media sorting
+    Moondream2 vision model for generating detailed image descriptions
     """
     
     def __init__(self, model_id="vikhyatk/moondream2"):
@@ -120,131 +119,6 @@ class MoondreamVisionModel:
         except Exception as e:
             logger.error(f"Error analyzing image {image_path}: {e}")
             return ""
-    
-    def simple_matches_prompt(self, image_path, user_prompt):
-        """
-        Simple matching without confidence scoring - matches ANY detection
-        
-        Args:
-            image_path: Path to the image file
-            user_prompt: User's sorting criteria
-            
-        Returns:
-            dict: Simple results with basic matching
-        """
-        try:
-            # Get basic description
-            description = self.analyze_image(image_path)
-            
-            # Extract keywords from prompt
-            keywords = self._extract_keywords(user_prompt)
-            
-            # Simple keyword matching - ANY match counts
-            description_lower = description.lower()
-            matches_found = []
-            
-            for keyword in keywords:
-                if keyword in description_lower:
-                    matches_found.append(keyword)
-            
-            # Return True if ANY keyword matches
-            is_match = len(matches_found) > 0
-            
-            return {
-                'description': description,
-                'is_match': is_match,
-                'matched_keywords': matches_found,
-                'all_keywords': keywords
-            }
-            
-        except Exception as e:
-            logger.error(f"Error analyzing {image_path}: {e}")
-            return {
-                'description': f"Error: {e}",
-                'is_match': False,
-                'matched_keywords': [],
-                'all_keywords': []
-            }
-    
-    def matches_prompt(self, description, user_prompt):
-        """
-        Determine if an image description matches the user's sorting prompt
-        
-        Args:
-            description: Image description from analyze_image
-            user_prompt: User's sorting criteria (e.g., "sort all dog photos")
-            
-        Returns:
-            bool: True if ANY keyword matches, False otherwise
-        """
-        # Extract key terms from user prompt
-        prompt_keywords = self._extract_keywords(user_prompt)
-        
-        if not prompt_keywords:
-            return False
-        
-        # Simple keyword matching - ANY match counts
-        description_lower = description.lower()
-        
-        for keyword in prompt_keywords:
-            if keyword in description_lower:
-                logger.debug(f"Match found: '{keyword}' in description")
-                return True
-        
-        logger.debug(f"No matches found for keywords: {prompt_keywords}")
-        return False
-    
-    def _extract_keywords(self, prompt):
-        """
-        Extract relevant keywords from user prompt
-        
-        Args:
-            prompt: User's natural language prompt
-            
-        Returns:
-            list: List of keywords to search for
-        """
-        # Remove common words and extract meaningful terms
-        stop_words = {
-            'sort', 'all', 'the', 'find', 'get', 'photos', 'images', 'pictures', 
-            'videos', 'files', 'in', 'to', 'from', 'with', 'and', 'or', 'of', 'a', 'an'
-        }
-        
-        # Synonym mappings for better matching
-        synonym_expansions = {
-            'person': ['person', 'man', 'woman', 'people', 'human', 'individual', 'guy', 'girl', 'boy'],
-            'people': ['person', 'man', 'woman', 'people', 'human', 'individual', 'guy', 'girl', 'boy', 'couple'],
-            'dog': ['dog', 'puppy', 'canine'],
-            'cat': ['cat', 'kitten', 'feline'],
-            'water': ['water', 'river', 'lake', 'ocean', 'sea', 'stream'],
-            'outdoor': ['outdoor', 'outside', 'nature', 'landscape'],
-            'food': ['food', 'meal', 'eating', 'dinner', 'lunch', 'breakfast']
-        }
-        
-        # Clean and split prompt
-        cleaned_prompt = re.sub(r'[^a-zA-Z\s]', ' ', prompt.lower())
-        words = cleaned_prompt.split()
-        
-        # Filter out stop words and short words
-        base_keywords = [word for word in words if word not in stop_words and len(word) > 2]
-        
-        # Expand with synonyms
-        expanded_keywords = []
-        for keyword in base_keywords:
-            if keyword in synonym_expansions:
-                expanded_keywords.extend(synonym_expansions[keyword])
-            else:
-                expanded_keywords.append(keyword)
-        
-        # Remove duplicates while preserving order
-        final_keywords = []
-        seen = set()
-        for keyword in expanded_keywords:
-            if keyword not in seen:
-                final_keywords.append(keyword)
-                seen.add(keyword)
-        
-        return final_keywords
     
     def get_model_info(self):
         """Return model information"""

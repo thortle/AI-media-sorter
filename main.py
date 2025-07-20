@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Media Sorter - AI-powered photo/video organization tool
-Uses Moondream2 for content analysis and natural language sorting
+Media Description Generator - AI-powered photo description tool
+Uses Moondream2 for detailed image content analysis and description generation
 """
 
 import click
@@ -89,8 +89,7 @@ def main(source_dir, max_files, selection_method, random_seed, descriptions_file
             
             try:
                 # Generate description only
-                result = vision_model.simple_matches_prompt(file_path, "describe this image")
-                description = result['description']
+                description = vision_model.analyze_image(file_path)
                 
                 # Write to descriptions file
                 file_manager.write_description(descriptions_file, Path(file_path).name, description)

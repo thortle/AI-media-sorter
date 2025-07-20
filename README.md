@@ -1,7 +1,5 @@
 # AI Media Description Generator
 
-## **Status: ✅ PRODUCTION READY & RUNNING**
-
 Successfully processing large photo collections using Moondream2 vision model on Apple Silicon.
 
 ## **Key Features**
@@ -10,7 +8,7 @@ Successfully processing large photo collections using Moondream2 vision model on
 - **📝 Description Generation** - Generates detailed descriptions for all images in a directory
 - **💾 HEIC Support** - Handles iPhone HEIC photos alongside JPG/PNG/TIFF
 - **🎲 Flexible File Selection** - 6 different methods for processing files (random, newest, etc.)
-- **📊 Complete Analysis** - Processes images only, skips video files automatically
+- **📊 Complete Analysis** - Processes images only, automatically skips unsupported file types
 - **🔧 Reproducible Results** - Use random seeds for consistent random sampling
 - **✅ Production Tested** - Successfully processing 8,330+ image collections
 
@@ -119,22 +117,30 @@ IMG_5678.JPG - Description: Another detailed description...
 
 ```
 media_sorter/
-├── main.py                 # Main CLI application  
+├── main.py                 # Main CLI application for generating descriptions
 ├── analyze_collection.py   # Collection analysis utility
+├── monitor_progress.py     # Progress monitoring utility
+├── check_progress.sh       # Shell script for progress checking
+├── complete_descriptions.txt # Generated descriptions output
 ├── models/
-│   └── vision_model.py     # Moondream2 integration with enhanced description generation
+│   ├── __init__.py
+│   └── vision_model.py     # Moondream2 integration for image description
 ├── utils/
-│   ├── file_manager.py     # File operations and selection methods
-│   └── logger.py           # Logging utilities
-└── requirements.txt        # Python dependencies
+│   ├── __init__.py
+│   ├── file_manager.py     # File discovery and selection methods
+│   └── logger.py           # Logging configuration
+├── requirements.txt        # Python dependencies
+└── README.md              # Project documentation
 ```
 
 ## **How It Works**
 
-1. **Scan**: Discovers all image files in source directory (skips videos automatically)
-2. **Analyze**: Moondream2 generates detailed descriptions using multi-prompt strategy
-3. **Validate**: Ensures descriptions are complete and properly formatted
-4. **Save**: Writes filename + description pairs to output file
+1. **Discover**: Scans the source directory recursively to find all supported image files (JPG, JPEG, PNG, TIFF, HEIC)
+2. **Select**: Applies the chosen selection method (filesystem order, random, newest, oldest, etc.) and limits to max-files if specified
+3. **Load Model**: Initializes Moondream2 vision model with Apple Silicon MPS acceleration for optimal performance
+4. **Analyze**: For each image, generates detailed descriptions using multiple prompt strategies to ensure completeness (tries 3 different prompts: "Describe this image in complete sentences", "What do you see in this image?", and "Describe this image in detail" - returns the first complete description that ends with proper punctuation, or keeps the longest as fallback)
+5. **Validate**: Automatically checks descriptions for proper completion (ending with punctuation) and attempts continuation if needed
+6. **Output**: Saves filename and description pairs to the specified text file in a structured format
 
 ## **Performance**
 
@@ -145,7 +151,7 @@ media_sorter/
 
 ## **Environment Requirements**
 
-- **Best Performance**: Internal drive (~/Desktop/media_sorter)
+- **Best Performance**: Internal drive
 - **External Drive Issues**: macOS resource fork files can corrupt Python packages
 - **Apple Silicon**: Optimized for M1/M2 with MPS acceleration
 - **Python**: 3.8+ with virtual environment recommended
@@ -153,7 +159,7 @@ media_sorter/
 ## **Troubleshooting**
 
 **Environment issues on external drive:**
-- Move project to internal drive (~/Desktop/media_sorter)
+- Move project to internal drive
 - Create fresh virtual environment on internal drive
 - External drives can cause Unicode encoding errors
 
@@ -166,5 +172,5 @@ media_sorter/
 - Use smaller batch sizes with `--max-files`
 
 **Incomplete descriptions:**
-- Tool automatically handles this with multi-prompt validation
+- Tool automatically handles this with multi-prompt validation (tries multiple prompts sequentially, validates each response for completeness by checking proper punctuation endings, and attempts to complete truncated descriptions)
 - All descriptions verified to end with proper punctuation
