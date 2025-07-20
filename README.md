@@ -31,8 +31,6 @@ cd sorting && python3 json_converter.py ../description/complete_descriptions.txt
 - **🔍 Keyword Search**: Find photos by content keywords
 - **📝 Description Search**: Search within full AI-generated descriptions  
 - **🏷️ Smart Tagging**: Improved keyword classification and accuracy
-- **👤 Human Detection**: Proper gender classification (human + man/woman when appropriate)
-- **🖼️ Photo Display**: View matching photos directly from search results
 
 ### **JSON Database Stats**
 - **8,330 photos** with structured metadata
