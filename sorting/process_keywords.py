@@ -12,7 +12,7 @@ class KeywordProcessor:
     def get_llm_keywords(self, description: str) -> Dict:
         """Extract categorized keywords from description using LLM"""
         
-        prompt = f"""Analyze this image description and detect if there are any human characters present.
+        prompt = f"""Analyze this image description and detect if there are any human characters or dogs present.
 
 Description: "{description}"
 
@@ -24,6 +24,13 @@ Return ONLY a valid JSON object with this structure:
       "type": "specific descriptor from description like 'man', 'woman', 'child', 'hiker', 'gentleman', 'tourist', 'couple', 'student', 'individuals', etc.",
       "count": 1
     }}
+  ],
+  "has_dogs": true/false,
+  "dogs": [
+    {{
+      "type": "specific descriptor from description like 'dog', 'puppy', 'terrier', 'retriever', 'husky', 'small dog', 'large dog', etc.",
+      "count": 1
+    }}
   ]
 }}
 
@@ -31,9 +38,12 @@ INSTRUCTIONS:
 1. Set "has_characters" to true if ANY human being is mentioned in the description (man/woman/child/kid/person/hiker/gentleman/lady/tourist/student/couple/etc.)
 2. Set "has_characters" to false if NO human beings are mentioned
 3. In "characters" array, list each type of human character mentioned with their count
-4. Use the exact descriptive terms from the description (like 'young man', 'woman', 'couple', 'hiker', 'child')
-5. Do NOT include animals, objects, or non-human subjects
-6. Return only valid JSON with no markdown formatting or comments"""
+4. Set "has_dogs" to true if ANY dog is mentioned in the description (dog/puppy/canine/terrier/retriever/husky/poodle/etc.)
+5. Set "has_dogs" to false if NO dogs are mentioned
+6. In "dogs" array, list each type of dog mentioned with their count
+7. Use the exact descriptive terms from the description (like 'small dog', 'Jack Russell Terrier', 'puppy', 'white and brown dog')
+8. Do NOT include other animals (cats, birds, etc.), objects, or non-dog subjects in the dogs array
+9. Return only valid JSON with no markdown formatting or comments"""
 
         try:
             response = requests.post(
@@ -83,7 +93,9 @@ INSTRUCTIONS:
         """Return empty keyword structure"""
         return {
             "has_characters": False,
-            "characters": []
+            "characters": [],
+            "has_dogs": False,
+            "dogs": []
         }
     
     def process_json_file(self, input_file: str, start_from: int = 0, batch_size: int = 50, max_photos: int = None):

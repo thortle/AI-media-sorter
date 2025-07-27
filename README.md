@@ -1,6 +1,12 @@
 # AI Media Description Generator
 
-## **Current Status: Phase 2 Development**
+## ****Detection Features:**
+- **🤖 LLM-Powered Analysis**: Uses llama3.2:3b via Ollama for intelligent text analysis
+- **👥 Human Character Detection**: Identifies mentions of people using descriptive terms from descriptions
+- **🐕 Dog Detection**: Identifies mentions of dogs using semantic understanding of various dog-related terms
+- **📊 Structured Keywords**: Adds boolean flags and detailed arrays for both characters and dogs to JSON
+- **🎯 Adaptive Recognition**: Handles varied descriptive language that manual parsing cannot catch
+- **⚡ Batch Processing**: Processes photos in configurable batches with progress savingt Status: Phase 2 Development**
 
 **Phase 1 Complete**: AI description generation for 8,330 photos ✅  
 **Phase 2 In Progress**: AI-powered keyword extraction and interactive photo search 🔄
@@ -9,8 +15,8 @@
 - ✅ **8,330 photos processed** with detailed AI descriptions
 - ✅ **JSON database created** with searchable structured format
 - ✅ **Multi-paragraph descriptions** properly captured and formatted
-- ✅ **AI keyword extraction system** using llama3.2:3b for human character detection
-- ✅ **Semantic character recognition** handling diverse descriptive vocabulary 
+- ✅ **AI keyword extraction system** using llama3.2:3b for human character and dog detection
+- ✅ **Semantic recognition** handling diverse descriptive vocabulary for both people and dogs 
 
 ## **Phase 2: Interactive Photo Search**
 
@@ -26,10 +32,10 @@ cd sorting && python3 json_converter.py ../description/complete_descriptions.txt
 ```
 
 ### **AI-Powered Keyword Extraction**
-Uses Ollama with llama3.2:3b model to intelligently detect human characters in photo descriptions:
+Uses Ollama with llama3.2:3b model to intelligently detect human characters and dogs in photo descriptions:
 
 ```bash
-# Process all photos for character detection
+# Process all photos for character and dog detection
 cd sorting && python3 process_keywords.py
 
 # Test mode: process only specific number of photos
@@ -45,17 +51,18 @@ cd sorting && python3 process_keywords.py --test 50
 - **⚡ Batch Processing**: Processes photos in configurable batches with progress saving
 
 **Why LLM for Keyword Extraction:**
-The initial vision model used diverse vocabulary when describing people (man, woman, child, hiker, gentleman, tourist, couple, student, individuals, etc.). Manual keyword matching would miss many variations, but LLMs excel at understanding semantic meaning regardless of specific word choice.
+The initial vision model used diverse vocabulary when describing people (man, woman, child, hiker, gentleman, tourist, couple, student, individuals, etc.) and dogs (dog, puppy, canine, pet, breed names like Golden Retriever, etc.). Manual keyword matching would miss many variations, but LLMs excel at understanding semantic meaning regardless of specific word choice.
 
 ### **Features In Development**
 - **🔍 Character-Based Search**: Find photos containing people using the new boolean flags
-- **📝 Description Search**: Search within full AI-generated descriptions
+- **� Dog-Based Search**: Find photos containing dogs using the new boolean flags
+- **�📝 Description Search**: Search within full AI-generated descriptions
 - **👤 Face Recognition Training**: Train model to identify recurring faces using photos flagged as containing people
 
 ### **JSON Database Stats**
 - **8,330 photos** with structured metadata (local database only)
 - **510 characters** average description length
-- **AI-powered character detection** with semantic understanding
+- **AI-powered detection** for both human characters and dogs with semantic understanding
 - **example.json** provided in repository for structure reference
 
 ## **Key Features**
@@ -205,11 +212,11 @@ media_sorter/
 ### **Phase 2: AI-Powered Keyword Extraction**
 1. **Load JSON Database**: Reads the structured photo descriptions from `descriptions.json`
 2. **Initialize LLM**: Connects to Ollama running llama3.2:3b model locally
-3. **Semantic Analysis**: For each photo description, sends carefully crafted prompt to detect human characters
-4. **Character Detection**: LLM identifies presence of people using semantic understanding, not keyword matching
-5. **Structure Results**: Adds `keywords` object with `has_characters` boolean and detailed `characters` array
+3. **Semantic Analysis**: For each photo description, sends carefully crafted prompt to detect human characters and dogs
+4. **Detection**: LLM identifies presence of people and dogs using semantic understanding, not keyword matching
+5. **Structure Results**: Adds `keywords` object with boolean flags and detailed arrays for both characters and dogs
 6. **Batch Processing**: Processes photos in configurable batches (default 50) with automatic progress saving
-7. **Update Database**: Saves enhanced JSON with character detection metadata
+7. **Update Database**: Saves enhanced JSON with character and dog detection metadata
 
 **Keyword Extraction Example:**
 ```json
@@ -223,7 +230,9 @@ media_sorter/
         "type": "man",
         "count": 1
       }
-    ]
+    ],
+    "has_dogs": false,
+    "dogs": []
   }
 }
 ```
@@ -239,7 +248,7 @@ media_sorter/
   - Build face embeddings for clustering and identification
 - **🔍 Advanced Search Interface**: Web-based search application with filters
 - **📊 Analytics Dashboard**: Statistics about photo collection content
-- **🏷️ Extended Keyword Categories**: Expand beyond character detection to objects, scenes, activities
+- **🏷️ Extended Keyword Categories**: Expand beyond character and dog detection to objects, scenes, activities
 
 ## **Performance**
 

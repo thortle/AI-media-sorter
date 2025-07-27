@@ -17,13 +17,37 @@
             "type": "man",
             "count": 1
           }
-        ]
+        ],
+        "has_dogs": false,
+        "dogs": []
       },
       "metadata": {
         "line_number": 1,
         "file_extension": ".heic",
         "description_length": 448,
         "word_count": 81
+      }
+    },
+    {
+      "filename": "IMG_4287.HEIC",
+      "description": "In the center of the image, a Jack Russell Terrier with a brown and white coat is standing in a patch of tall, lush green grass. The dog's head is tilted slightly to the left, as it gazes directly into the camera. The dog is wearing a red collar. The background features a chain-link fence, and a partly cloudy blue sky is visible.",
+      "full_path": "/the/path/to/your/dog-photo.heic",
+      "keywords": {
+        "has_characters": false,
+        "characters": [],
+        "has_dogs": true,
+        "dogs": [
+          {
+            "type": "Jack Russell Terrier",
+            "count": 1
+          }
+        ]
+      },
+      "metadata": {
+        "line_number": 2,
+        "file_extension": ".heic",
+        "description_length": 312,
+        "word_count": 58
       }
     } ]
 }
