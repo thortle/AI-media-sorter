@@ -12,7 +12,7 @@ class KeywordProcessor:
     def get_llm_keywords(self, description: str) -> Dict:
         """Extract categorized keywords from description using LLM"""
         
-        prompt = f"""Analyze this image description and detect if there are any human characters or dogs present.
+        prompt = f"""Analyze this image description and detect if there are any human characters, dogs, or cars present.
 
 Description: "{description}"
 
@@ -31,6 +31,13 @@ Return ONLY a valid JSON object with this structure:
       "type": "specific descriptor from description like 'dog', 'puppy', 'terrier', 'retriever', 'husky', 'small dog', 'large dog', etc.",
       "count": 1
     }}
+  ],
+  "has_cars": true/false,
+  "cars": [
+    {{
+      "type": "specific descriptor from description like 'car', 'vehicle', 'sedan', 'SUV', 'truck', 'automobile', 'convertible', 'hatchback', etc.",
+      "count": 1
+    }}
   ]
 }}
 
@@ -41,9 +48,13 @@ INSTRUCTIONS:
 4. Set "has_dogs" to true if ANY dog is mentioned in the description (dog/puppy/canine/terrier/retriever/husky/poodle/etc.)
 5. Set "has_dogs" to false if NO dogs are mentioned
 6. In "dogs" array, list each type of dog mentioned with their count
-7. Use the exact descriptive terms from the description (like 'small dog', 'Jack Russell Terrier', 'puppy', 'white and brown dog')
-8. Do NOT include other animals (cats, birds, etc.), objects, or non-dog subjects in the dogs array
-9. Return only valid JSON with no markdown formatting or comments"""
+7. Set "has_cars" to true if ANY car/vehicle is mentioned in the description (car/vehicle/sedan/SUV/truck/automobile/convertible/van/minivan/etc.)
+8. Set "has_cars" to false if NO cars/vehicles are mentioned
+9. In "cars" array, list each type of car/vehicle mentioned with their count
+10. Use the exact descriptive terms from the description (like 'red car', 'pickup truck', 'white sedan', 'sports car')
+11. Do NOT include other vehicles like bicycles, motorcycles, boats, trains, or planes in the cars array - only cars, trucks, vans, and similar road vehicles
+12. Do NOT include other animals (cats, birds, etc.) or objects in their respective arrays
+13. Return only valid JSON with no markdown formatting or comments"""
 
         try:
             response = requests.post(
@@ -95,7 +106,9 @@ INSTRUCTIONS:
             "has_characters": False,
             "characters": [],
             "has_dogs": False,
-            "dogs": []
+            "dogs": [],
+            "has_cars": False,
+            "cars": []
         }
     
     def process_json_file(self, input_file: str, start_from: int = 0, batch_size: int = 50, max_photos: int = None):
@@ -153,7 +166,7 @@ INSTRUCTIONS:
 
 def main():
     # Set up command line argument parsing
-    parser = argparse.ArgumentParser(description='Process photo descriptions to detect human characters')
+    parser = argparse.ArgumentParser(description='Process photo descriptions to detect human characters, dogs, and cars')
     parser.add_argument('--test', type=int, metavar='N', 
                        help='Test mode: process only N photos (e.g., --test 5, --test 10, --test 15)')
     

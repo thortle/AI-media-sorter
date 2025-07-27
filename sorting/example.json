@@ -19,7 +19,9 @@
           }
         ],
         "has_dogs": false,
-        "dogs": []
+        "dogs": [],
+        "has_cars": false,
+        "cars": []
       },
       "metadata": {
         "line_number": 1,
@@ -41,13 +43,39 @@
             "type": "Jack Russell Terrier",
             "count": 1
           }
-        ]
+        ],
+        "has_cars": false,
+        "cars": []
       },
       "metadata": {
         "line_number": 2,
         "file_extension": ".heic",
         "description_length": 312,
         "word_count": 58
+      }
+    },
+    {
+      "filename": "IMG_5432.HEIC",
+      "description": "A red sedan is parked in front of a modern house with white walls and large windows. The car appears to be well-maintained and sits on a concrete driveway. In the background, there are some trees and a blue sky with scattered clouds.",
+      "full_path": "/the/path/to/your/car-photo.heic",
+      "keywords": {
+        "has_characters": false,
+        "characters": [],
+        "has_dogs": false,
+        "dogs": [],
+        "has_cars": true,
+        "cars": [
+          {
+            "type": "red sedan",
+            "count": 1
+          }
+        ]
+      },
+      "metadata": {
+        "line_number": 3,
+        "file_extension": ".heic",
+        "description_length": 198,
+        "word_count": 34
       }
     } ]
 }
