@@ -1,3 +1,14 @@
+# Private data files - keep local only
+descriptions.json
+sorting/descriptions.json
+complete_descriptions.txt
+description/complete_descriptions.txt
+
+# Personal workflow and development files
+CLAUDE.md
+todo.md
+git-commands-guide.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
