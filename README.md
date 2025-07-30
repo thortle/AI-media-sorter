@@ -1,28 +1,18 @@
 # AI Media Description Generator
 
-## ****Detection Featu### **Features In Development**
-- **🔍 Character-Based Search**: Find photos containing people using the new boolean flags
-- **🐕 Dog-Based Search**: Find photos containing dogs using the new boolean flags
-- **🚗 Car-Based Search**: Find photos containing cars and vehicles using the new boolean flags
-- **📝 Description Search**: Search within full AI-generated descriptions
-- **👤 Face Recognition Training**: Train model to identify recurring faces using photos flagged as containing people*
-- **🤖 LLM-Powered Analysis**: Uses llama3.2:3b via Ollama for intelligent text analysis
-- **👥 Human Character Detection**: Identifies mentions of people using descriptive terms from descriptions
-- **🐕 Dog Detection**: Identifies mentions of dogs using semantic understanding of various dog-related terms
-- **� Car Detection**: Identifies mentions of cars and vehicles using semantic understanding of automotive terms
-- **�📊 Structured Keywords**: Adds boolean flags and detailed arrays for characters, dogs, and cars to JSON
-- **🎯 Adaptive Recognition**: Handles varied descriptive language that manual parsing cannot catch
-- **⚡ Batch Processing**: Processes photos in configurable batches with progress savingt Status: Phase 2 Development**
+## **Current Status: Phase 2 Advanced Development**
 
 **Phase 1 Complete**: AI description generation for 8,330 photos ✅  
-**Phase 2 In Progress**: AI-powered keyword extraction and interactive photo search 🔄
+**Phase 2 Advanced**: Smart search with intelligent query parsing and proximity matching 🔄
 
 ### **Recent Achievements**
 - ✅ **8,330 photos processed** with detailed AI descriptions
 - ✅ **JSON database created** with searchable structured format
 - ✅ **Multi-paragraph descriptions** properly captured and formatted
 - ✅ **AI keyword extraction system** using llama3.2:3b for human character, dog, and car detection
-- ✅ **Semantic recognition** handling diverse descriptive vocabulary for people, dogs, and vehicles 
+- ✅ **Semantic recognition** handling diverse descriptive vocabulary for people, dogs, and vehicles
+- ✅ **Smart photo search engine** with intelligent query parsing and proximity matching
+- ✅ **Interactive CLI search tool** with flexible AND/OR logic and contextual results
 
 ## **Phase 2: Interactive Photo Search**
 
@@ -52,29 +42,130 @@ cd sorting && python3 process_keywords.py --test 50
 **Character Detection Features:**
 - **🤖 LLM-Powered Analysis**: Uses llama3.2:3b via Ollama for intelligent text analysis
 - **👥 Human Character Detection**: Identifies mentions of people using descriptive terms from descriptions
-- **� Structured Keywords**: Adds `has_characters` boolean and detailed character array to JSON
+- **🐕 Dog Detection**: Identifies mentions of dogs using semantic understanding of various dog-related terms
+- **🚗 Car Detection**: Identifies mentions of cars and vehicles using semantic understanding of automotive terms
+- **📊 Structured Keywords**: Adds boolean flags and detailed arrays for characters, dogs, and cars to JSON
 - **🎯 Adaptive Recognition**: Handles varied descriptive language that manual parsing cannot catch
 - **⚡ Batch Processing**: Processes photos in configurable batches with progress saving
 
 **Why LLM for Keyword Extraction:**
 The initial vision model used diverse vocabulary when describing people (man, woman, child, hiker, gentleman, tourist, couple, student, individuals, etc.), dogs (dog, puppy, canine, pet, breed names like Golden Retriever, etc.), and cars (car, vehicle, sedan, SUV, truck, automobile, convertible, etc.). Manual keyword matching would miss many variations, but LLMs excel at understanding semantic meaning regardless of specific word choice.
 
-### **Features In Development**
-- **🔍 Character-Based Search**: Find photos containing people using the new boolean flags
-- **� Dog-Based Search**: Find photos containing dogs using the new boolean flags
-- **�📝 Description Search**: Search within full AI-generated descriptions
-- **👤 Face Recognition Training**: Train model to identify recurring faces using photos flagged as containing people
+### **Smart Photo Search Engine**
+
+Interactive search tool with intelligent query parsing and proximity matching:
+
+```bash
+# Launch interactive search tool
+cd sorting && python3 search_photos.py
+```
+
+**🧠 Smart Query Features:**
+- **Proximity Search**: `'red hair'` → finds red AND hair close together (≤3 words apart)
+- **OR Logic**: `'red or hair'` → finds photos with EITHER red OR hair
+- **Mixed Logic**: `'red hair and dog'` → finds (red + hair close) AND dog anywhere in description
+- **Complex Queries**: `'red hair or blue eyes'` → finds (red + hair) OR (blue + eyes close)
+
+**🔧 Search Commands:**
+```bash
+# Basic proximity search (default)
+Search: red hair
+🔍 Searching for: 'red + hair' (≤3 apart)
+
+# OR search for broader results
+Search: dog or cat
+🔍 Searching for: 'dog' OR 'cat'
+
+# Mixed logic: proximity + standalone
+Search: red hair and woman
+🔍 Searching for: 'red + hair' (≤3 apart) AND 'woman' (anywhere)
+
+# Adjust proximity distance
+Search: proximity 5
+🔧 Proximity distance set to: 5 words
+
+# Collection statistics
+Search: stats
+📊 Collection Statistics:
+   Total photos: 8330
+   Photos with dogs: 245
+   Photos with cars: 89
+   Photos with people: 1537
+```
+
+**🎯 Smart Matching Features:**
+- **Intelligent Partial Matching**: Avoids false positives (e.g., 'hair' won't match 'chair')
+- **Contextual Results**: Shows 3 words before and after each match
+- **Multiple Contexts**: Displays all occurrences of keywords in each photo
+- **Highlighted Keywords**: Bold formatting for matched words in context
+- **File Metadata**: Shows word count, description length, and full file path
+
+**📊 Boolean Section Usage:**
+The boolean flags (`has_characters`, `has_dogs`, `has_cars`) serve multiple purposes:
+- **Collection Statistics**: Quick overview of photo content distribution
+- **Performance Optimization**: Fast filtering without text search
+- **Future Dataset Creation**: Pre-identified photos for face recognition training
+  - `has_characters: true` photos (~1,537) will be training dataset for face recognition
+  - Focused computational resources on photos containing people
+  - Foundation for building face embeddings and clustering
+
+### **Example Search Sessions**
+
+**Proximity Search Example:**
+```
+Search (≤3): red hair
+🔍 Searching for: 'red + hair' (≤3 apart)
+✅ Found 12 result(s):
+
+ 1. 📁 IMG_2534.HEIC
+    🔎 'red hair':
+       ...woman with short **red** **hair** wearing a...
+       ...her **red** curly **hair** flows in...
+    📊 89 words, 456 chars
+    📂 /Volumes/T7_SSD/G-photos/IMG_2534.HEIC
+```
+
+**Mixed Logic Example:**
+```
+Search (≤3): red hair and woman
+🔍 Searching for: 'red + hair' (≤3 apart) AND 'woman' (anywhere)
+✅ Found 8 result(s):
+
+ 1. 📁 IMG_1847.JPG
+    🔎 'red hair':
+       ...short light **red** **hair** and is...
+    🔎 'woman':
+       ...The **woman** is wearing dark...
+    📊 103 words, 521 chars
+```
+
+**OR Logic Example:**
+```
+Search (≤3): dog or cat
+🔍 Searching for: 'dog' OR 'cat'
+✅ Found 267 result(s):
+
+ 1. 📁 IMG_4482.HEIC
+    🔎 'dog':
+       ...white and brown **dog** possibly a Jack...
+       ...tiled patio The **dog** s gaze is...
+    📊 69 words, 383 chars
+```
 
 ### **JSON Database Stats**
 - **8,330 photos** with structured metadata (local database only)
 - **510 characters** average description length
 - **AI-powered detection** for human characters, dogs, and cars with semantic understanding
+- **1,537 photos with people** (18.5% of collection) - future face recognition dataset
+- **245 photos with dogs** (2.9% of collection)
+- **89 photos with cars** (1.1% of collection)
 - **example.json** provided in repository for structure reference
 
 ## **Key Features**
 
 - **🤖 Local AI Processing** - All analysis happens on Apple Silicon, no internet required
 - **📝 Description Generation** - Generates detailed descriptions for all images
+- **🔍 Smart Search Engine** - Intelligent query parsing with proximity and boolean logic
 - **💾 HEIC Support** - Handles iPhone HEIC photos alongside JPG/PNG/TIFF
 - **🎲 Flexible File Selection** - 6 different methods for processing files (random, newest, etc.)
 - **📊 Complete Analysis** - Processes images only, automatically skips unsupported file types
@@ -82,11 +173,12 @@ The initial vision model used diverse vocabulary when describing people (man, wo
 
 ## **Purpose**
 
-This tool generates detailed AI-powered descriptions for image collections. Creates a comprehensive catalog of descriptions that can be used for:
+This tool generates detailed AI-powered descriptions for image collections and provides intelligent search capabilities. Creates a comprehensive catalog that can be used for:
 
-- Content analysis and search
-- Building datasets for machine learning
-- Creating searchable metadata for large photo collections
+- **Content analysis and search** with natural language queries
+- **Building datasets for machine learning** (especially face recognition using character-flagged photos)
+- **Creating searchable metadata** for large photo collections
+- **Intelligent photo organization** and discovery
 
 ## **Quick Start**
 
@@ -95,11 +187,11 @@ This tool generates detailed AI-powered descriptions for image collections. Crea
 # Generate descriptions for all images
 cd description && python3 main.py "/path/to/your/photos"
 
-# Limit to 100 files for testing
-cd description && python3 main.py "/path/to/your/photos" --max-files 100
+# Add AI-powered keyword extraction
+cd sorting && python3 process_keywords.py
 
-# Use random sampling with seed for reproducible results
-cd description && python3 main.py "/path/to/your/photos" --selection-method random --random-seed 12345
+# Search your photos interactively
+cd sorting && python3 search_photos.py
 ```
 
 ### **Analyze Your Collection First**
@@ -137,6 +229,9 @@ Options:
 # Full-scale processing (production)
 cd description && python3 main.py "/Volumes/T7_SSD/G-photos"
 
+# Add keyword extraction for all photos
+cd sorting && python3 process_keywords.py
+
 # Test with small sample first
 cd description && python3 main.py "/Volumes/T7_SSD/G-photos" --max-files 50
 
@@ -172,7 +267,13 @@ IMG_5678.JPG - Description: Another detailed description...
    pip install -r requirements.txt
    ```
 
-3. **The first run will download Moondream2 model (~3GB)**
+3. **Install Ollama for keyword extraction:**
+   ```bash
+   # Install from https://ollama.ai
+   ollama pull llama3.2:3b
+   ```
+
+4. **The first run will download Moondream2 model (~3GB)**
 
 ## **Project Structure**
 
@@ -195,11 +296,12 @@ media_sorter/
 │       ├── __init__.py
 │       ├── file_manager.py       # File discovery and selection methods
 │       └── logger.py             # Logging configuration
-└── sorting/                      # Phase 2: Photo Search & Display (In Development)
+└── sorting/                      # Phase 2: Photo Search & Display
     ├── json_converter.py         # Convert descriptions.txt to searchable JSON format
-    ├── process_keywords.py       # AI-powered keyword extraction using llama3.2:3b for humans, dogs, and cars
+    ├── process_keywords.py       # AI-powered keyword extraction using llama3.2:3b
+    ├── search_photos.py          # Smart search engine with intelligent query parsing
     ├── example.json              # Example JSON structure for reference (in repo)
-    ├── descriptions.json         # Full JSON database with private photo data (local only, not in repo)
+    ├── descriptions.json         # Full JSON database with private photo data (local only)
     ├── __init__.py
     └── utils/
         └── __init__.py
@@ -224,6 +326,14 @@ media_sorter/
 6. **Batch Processing**: Processes photos in configurable batches (default 50) with automatic progress saving
 7. **Update Database**: Saves enhanced JSON with character, dog, and car detection metadata
 
+### **Phase 2: Smart Photo Search Engine**
+1. **Query Parsing**: Intelligently parses natural language queries for AND/OR logic and proximity requirements
+2. **Smart Matching**: Uses improved partial matching that avoids false positives (e.g., 'hair' vs 'chair')
+3. **Proximity Search**: Finds keywords within configurable word distance (default 3 words apart)
+4. **Context Extraction**: Shows 3 words before and after matches with smart padding
+5. **Result Ranking**: Returns photos with highlighted contexts and metadata
+6. **Interactive CLI**: Real-time search with command support and statistics
+
 **Keyword Extraction Example:**
 ```json
 {
@@ -245,22 +355,31 @@ media_sorter/
 }
 ```
 
+**Smart Search Query Examples:**
+- `'red hair'` → Proximity search (red + hair within 3 words)
+- `'red or hair'` → OR search (either keyword)
+- `'red hair and dog'` → Mixed logic ((red + hair close) AND dog anywhere)
+- `'red hair or blue eyes'` → Complex OR ((red + hair) OR (blue + eyes))
+
 **Note:** The full `descriptions.json` database containing private photo data is kept locally only. The repository includes `example.json` showing the data structure for reference.
 
 ## **Future Development Roadmap**
 
 ### **Phase 3: Advanced Features (Planned)**
 - **👤 Face Recognition Training**: Train a custom model to identify recurring faces across the photo collection
-  - Use `has_characters: true` photos as training dataset
-  - Focus computational resources only on photos containing people
+  - Use `has_characters: true` photos (1,537 photos) as focused training dataset
+  - Efficient processing by targeting only photos containing people
   - Build face embeddings for clustering and identification
-- **🔍 Advanced Search Interface**: Web-based search application with filters
-- **📊 Analytics Dashboard**: Statistics about photo collection content
+- **🔍 Web-based Search Interface**: Enhanced UI with filters and advanced search options
+- **📊 Analytics Dashboard**: Statistics about photo collection content and trends
 - **🏷️ Extended Keyword Categories**: Expand beyond character, dog, and car detection to objects, scenes, activities
+- **🤖 Custom Model Training**: Use the structured dataset for training domain-specific vision models
 
 ## **Performance**
 
-- **Speed**: ~8 seconds per image on Apple Silicon (M1 Pro)
+- **Description Generation**: ~8 seconds per image on Apple Silicon (M1 Pro)
+- **Keyword Extraction**: ~2 seconds per photo description with llama3.2:3b
+- **Search Performance**: Sub-second response for most queries on 8,330 photo database
 - **Accuracy**: Detailed, complete descriptions with multi-prompt validation
 - **Production Status**: Successfully processed 8,330+ image collections
 
@@ -289,6 +408,11 @@ media_sorter/
 - Close other applications
 - Use smaller batch sizes with `--max-files`
 
+**Search returns unexpected results:**
+- Check query syntax for AND/OR logic
+- Adjust proximity distance with `proximity N` command
+- Use `stats` command to understand collection content
+
 **Incomplete descriptions:**
 - Tool automatically handles this with multi-prompt validation (tries multiple prompts sequentially, validates each response for completeness by checking proper punctuation endings, and attempts to complete truncated descriptions)
 - All descriptions verified to end with proper punctuation
@@ -298,3 +422,8 @@ media_sorter/
 - Verify model is installed: `ollama list` (should show llama3.2:3b)
 - Check Ollama connection: `curl http://localhost:11434/api/generate`
 - If connection fails, restart Ollama service
+
+**Search performance issues:**
+- Consider implementing pre-indexing for very large collections (>10k photos)
+- Use more specific queries to reduce result set size
+- Check available memory if processing large descriptions
