@@ -12,49 +12,29 @@ class KeywordProcessor:
     def get_llm_keywords(self, description: str) -> Dict:
         """Extract categorized keywords from description using LLM"""
         
-        prompt = f"""Analyze this image description and detect if there are any human characters, dogs, or cars present.
+        prompt = f"""Analyze this description for humans, dogs, and cars. Return complete JSON only.
 
 Description: "{description}"
 
-Return ONLY a valid JSON object with this structure:
+Required JSON format:
 {{
   "has_characters": true/false,
-  "characters": [
-    {{
-      "type": "specific descriptor from description like 'man', 'woman', 'child', 'hiker', 'gentleman', 'tourist', 'couple', 'student', 'individuals', etc.",
-      "count": 1
-    }}
-  ],
+  "characters": [{{"type": "man/woman/child/etc", "count": 1}}],
   "has_dogs": true/false,
-  "dogs": [
-    {{
-      "type": "specific descriptor from description like 'dog', 'puppy', 'terrier', 'retriever', 'husky', 'small dog', 'large dog', etc.",
-      "count": 1
-    }}
-  ],
+  "dogs": [{{"type": "dog/puppy/breed/etc", "count": 1}}],
   "has_cars": true/false,
-  "cars": [
-    {{
-      "type": "specific descriptor from description like 'car', 'vehicle', 'sedan', 'SUV', 'truck', 'automobile', 'convertible', 'hatchback', etc.",
-      "count": 1
-    }}
-  ]
+  "cars": [{{"type": "car/vehicle/sedan/etc", "count": 1}}]
 }}
 
-INSTRUCTIONS:
-1. Set "has_characters" to true if ANY human being is mentioned in the description (man/woman/child/kid/person/hiker/gentleman/lady/tourist/student/couple/etc.)
-2. Set "has_characters" to false if NO human beings are mentioned
-3. In "characters" array, list each type of human character mentioned with their count
-4. Set "has_dogs" to true if ANY dog is mentioned in the description (dog/puppy/canine/terrier/retriever/husky/poodle/etc.)
-5. Set "has_dogs" to false if NO dogs are mentioned
-6. In "dogs" array, list each type of dog mentioned with their count
-7. Set "has_cars" to true if ANY car/vehicle is mentioned in the description (car/vehicle/sedan/SUV/truck/automobile/convertible/van/minivan/etc.)
-8. Set "has_cars" to false if NO cars/vehicles are mentioned
-9. In "cars" array, list each type of car/vehicle mentioned with their count
-10. Use the exact descriptive terms from the description (like 'red car', 'pickup truck', 'white sedan', 'sports car')
-11. Do NOT include other vehicles like bicycles, motorcycles, boats, trains, or planes in the cars array - only cars, trucks, vans, and similar road vehicles
-12. Do NOT include other animals (cats, birds, etc.) or objects in their respective arrays
-13. Return only valid JSON with no markdown formatting or comments"""
+Rules:
+- has_characters=true if ANY human mentioned (man/woman/child/person/hiker/tourist/etc)
+- has_dogs=true if ANY dog mentioned (dog/puppy/canine/breed names/etc) 
+- has_cars=true if ANY car mentioned (car/vehicle/sedan/SUV/truck/etc)
+- Use empty arrays [] when false
+- MUST include ALL fields and closing braces
+- NO other animals in dogs array (no foxes/cats/etc)
+- NO other vehicles in cars array (no bikes/boats/etc)
+- Return ONLY complete JSON, no extra text"""
 
         try:
             response = requests.post(
@@ -64,11 +44,15 @@ INSTRUCTIONS:
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.1,
-                        "top_p": 0.9
+                        "temperature": 0.05,  # Even lower temperature for more consistent output
+                        "top_p": 0.8,
+                        "num_predict": 800,  # Increased token limit
+                        "stop": [],  # Remove stop tokens that might be truncating
+                        "repeat_penalty": 1.0,
+                        "top_k": 10
                     }
                 },
-                timeout=30
+                timeout=90  # Increased timeout
             )
             
             if response.status_code == 200:
@@ -91,6 +75,37 @@ INSTRUCTIONS:
                 except json.JSONDecodeError as e:
                     print(f"JSON decode error: {e}")
                     print(f"Response was: {response_text}")
+                    
+                    # Try to reconstruct incomplete JSON
+                    try:
+                        start_idx = response_text.find('{')
+                        if start_idx != -1:
+                            partial_json = response_text[start_idx:]
+                            
+                            # Handle common incomplete patterns
+                            if '"has_cars": false' in partial_json and not partial_json.rstrip().endswith('}'):
+                                # Missing cars array and closing brace
+                                if '"cars":' not in partial_json:
+                                    partial_json = partial_json.rstrip() + ',\n  "cars": []\n}'
+                                else:
+                                    partial_json = partial_json.rstrip() + '\n}'
+                            elif '"has_dogs": true' in partial_json and '"dogs": [' in partial_json:
+                                # Check if we need to close the dogs array and add cars
+                                if '"has_cars":' not in partial_json:
+                                    # Add missing cars section
+                                    if partial_json.rstrip().endswith(']'):
+                                        partial_json = partial_json.rstrip() + ',\n  "has_cars": false,\n  "cars": []\n}'
+                                    else:
+                                        partial_json = partial_json.rstrip() + '\n  ],\n  "has_cars": false,\n  "cars": []\n}'
+                                elif not partial_json.rstrip().endswith('}'):
+                                    partial_json = partial_json.rstrip() + '\n}'
+                            
+                            print(f"Attempting to fix JSON: {partial_json}")
+                            return json.loads(partial_json)
+                            
+                    except Exception as fix_error:
+                        print(f"Could not fix JSON: {fix_error}")
+                    
                     return self._get_empty_keywords()
             else:
                 print(f"HTTP error: {response.status_code}")
