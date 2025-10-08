@@ -196,21 +196,36 @@ class DescriptionConverter:
 
 def main():
     """Main function for command-line usage"""
-    # If no arguments provided, use default values for easy VS Code execution
+    # If no arguments provided, use default values for easy execution
     if len(sys.argv) < 2:
-        print("No arguments provided - using default settings for VS Code execution")
-        print("Converting ../description/complete_descriptions.txt to descriptions.json...")
-        descriptions_file = "../description/complete_descriptions.txt"
-        output_file = "descriptions.json"
+        print("No arguments provided - using default settings")
+        print("Converting descriptions file to ../../data/descriptions.json...")
+        # Look for descriptions file in common locations
+        possible_paths = [
+            "../../data/complete_descriptions.txt",
+            "../generate/complete_descriptions.txt"
+        ]
+        descriptions_file = None
+        for path in possible_paths:
+            if Path(path).exists():
+                descriptions_file = path
+                break
+        
+        if not descriptions_file:
+            print("❌ Error: Could not find descriptions file!")
+            print("Please provide path: python3 json_converter.py <descriptions_file>")
+            sys.exit(1)
+            
+        output_file = "../../data/descriptions.json"
     else:
         descriptions_file = sys.argv[1]
-        output_file = sys.argv[2] if len(sys.argv) > 2 else "descriptions.json"
+        output_file = sys.argv[2] if len(sys.argv) > 2 else "../../data/descriptions.json"
     
     # Check if input file exists
     if not Path(descriptions_file).exists():
         print(f"❌ Error: Input file '{descriptions_file}' not found!")
         print("\nUsage: python3 json_converter.py <descriptions_file> [output_file]")
-        print("Example: python3 json_converter.py ../description/complete_descriptions.txt descriptions.json")
+        print("Example: python3 json_converter.py /path/to/descriptions.txt ../../data/descriptions.json")
         sys.exit(1)
     
     # Initialize converter

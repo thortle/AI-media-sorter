@@ -1,13 +1,12 @@
 # Private data files - keep local only
-descriptions.json
-sorting/descriptions.json
-complete_descriptions.txt
-description/complete_descriptions.txt
+data/descriptions.json
+data/complete_descriptions.txt
+data/*.json
+data/*.txt
+!data/.gitkeep
 
-# Personal workflow and development files
-CLAUDE.md
-todo.md
-git-commands-guide.md
+# Documentation - keep local workflow files
+docs/git-commands-guide.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

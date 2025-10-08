@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# filepath: /Users/thortle/Desktop/media_sorter/sorting/search_photos.py
 
 import json
 import re
@@ -420,13 +419,13 @@ class PhotoSearchEngine:
             print()
 
 def main():
-    # Path to the descriptions JSON file
-    descriptions_file = Path(__file__).parent / "descriptions.json"
+    # Path to the descriptions JSON file (relative to scripts/search/)
+    descriptions_file = Path(__file__).parent.parent.parent / "data" / "descriptions.json"
     
     # Check if file exists
     if not descriptions_file.exists():
-        print(f"❌ Error: descriptions.json not found in {descriptions_file.parent}")
-        print("Make sure you're running this script from the sorting directory")
+        print(f"❌ Error: descriptions.json not found at {descriptions_file}")
+        print("Make sure you're running this script from the scripts/search directory")
         sys.exit(1)
     
     # Initialize search engine

@@ -14,8 +14,8 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-# Add the parent directory to the path to import vision model
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add the current directory to Python path for local imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from models.vision_model import MoondreamVisionModel
 from utils.logger import setup_logger

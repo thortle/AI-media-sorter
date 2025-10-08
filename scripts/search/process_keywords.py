@@ -188,7 +188,8 @@ def main():
     args = parser.parse_args()
     
     processor = KeywordProcessor()
-    input_file = "/Users/thortle/Desktop/media_sorter/sorting/descriptions.json"
+    # Use relative path from scripts/search/ to data/
+    input_file = "../../data/descriptions.json"
     
     if args.test:
         # Test mode: process only specified number of photos
