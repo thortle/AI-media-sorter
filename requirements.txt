@@ -6,3 +6,9 @@ protobuf>=3.20.0
 tqdm>=4.64.0
 click>=8.0.0
 requests>=2.32.0
+
+# Facial Recognition (Optional)
+deepface>=0.0.79
+tf-keras>=2.16.0
+tensorflow>=2.16.0
+scipy>=1.10.0

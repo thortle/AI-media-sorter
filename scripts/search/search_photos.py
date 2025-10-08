@@ -325,6 +325,10 @@ class PhotoSearchEngine:
         if not query.strip():
             return []
         
+        # Special case: search for "me" using face recognition
+        if query.strip().lower() == 'me':
+            return self.search_by_face_recognition()
+        
         # Parse the query
         parsed_query = self.parse_query(query)
         
@@ -345,6 +349,47 @@ class PhotoSearchEngine:
                     'full_path': photo['full_path'],
                     'description_length': len(photo['description']),
                     'word_count': photo.get('metadata', {}).get('word_count', 0)
+                })
+        
+        return results
+    
+    def search_by_face_recognition(self):
+        """Search for photos containing known faces (me)"""
+        print(f"🔍 Searching for: Photos with recognized faces (you)")
+        print("─" * 60)
+        
+        results = []
+        
+        for photo in self.photos:
+            # Check if photo has face recognition data
+            face_data = photo.get('face_recognition')
+            
+            if not face_data:
+                continue  # No face recognition data yet
+            
+            # Check if known faces detected
+            if face_data.get('has_known_faces', False):
+                known_faces = face_data.get('known_faces', [])
+                
+                # Create a special match result for face recognition
+                matches = {}
+                face_info = []
+                
+                for face in known_faces:
+                    confidence = face.get('match_confidence', 0)
+                    ref_image = face.get('reference_image', 'unknown')
+                    face_info.append(f"Match: {confidence:.1%} confidence (ref: {ref_image})")
+                
+                matches['Face Recognition'] = face_info
+                
+                results.append({
+                    'filename': photo['filename'],
+                    'matches': matches,
+                    'full_path': photo['full_path'],
+                    'description_length': len(photo['description']),
+                    'word_count': photo.get('metadata', {}).get('word_count', 0),
+                    'face_count': face_data.get('face_count', 0),
+                    'known_faces_count': len(known_faces)
                 })
         
         return results
@@ -438,6 +483,7 @@ def main():
     print("  • 'red or hair' → red OR hair (either one)")
     print("  • 'red hair and dog' → (red + hair close) AND dog anywhere")
     print("  • 'red hair or blue eyes' → (red + hair) OR (blue + eyes)")
+    print("  • 'me' → photos with your face (requires face recognition)")
     print()
     print("🔧 Commands:")
     print("  • Set proximity: 'proximity 5' (max words between keywords)")
@@ -475,6 +521,19 @@ def main():
                 print(f"   Photos with dogs: {has_dogs}")
                 print(f"   Photos with cars: {has_cars}")
                 print(f"   Photos with people: {has_people}")
+                
+                # Face recognition statistics
+                has_face_data = sum(1 for p in search_engine.photos if 'face_recognition' in p)
+                has_faces = sum(1 for p in search_engine.photos 
+                               if p.get('face_recognition', {}).get('has_faces', False))
+                has_known_faces = sum(1 for p in search_engine.photos 
+                                     if p.get('face_recognition', {}).get('has_known_faces', False))
+                
+                print(f"   Photos with face recognition data: {has_face_data}")
+                if has_face_data > 0:
+                    print(f"   Photos with detected faces: {has_faces}")
+                    print(f"   Photos with known faces (you): {has_known_faces}")
+                
                 print()
                 continue
             

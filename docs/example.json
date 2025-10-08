@@ -28,6 +28,18 @@
         "file_extension": ".heic",
         "description_length": 448,
         "word_count": 81
+      },
+      "face_recognition": {
+        "has_faces": true,
+        "face_count": 1,
+        "has_known_faces": true,
+        "known_faces": [
+          {
+            "match_confidence": 0.92,
+            "reference_image": "IMG_1052.JPG",
+            "distance": 0.16
+          }
+        ]
       }
     },
     {
@@ -52,6 +64,12 @@
         "file_extension": ".heic",
         "description_length": 312,
         "word_count": 58
+      },
+      "face_recognition": {
+        "has_faces": false,
+        "face_count": 0,
+        "has_known_faces": false,
+        "known_faces": []
       }
     },
     {
@@ -76,6 +94,12 @@
         "file_extension": ".heic",
         "description_length": 198,
         "word_count": 34
+      },
+      "face_recognition": {
+        "has_faces": false,
+        "face_count": 0,
+        "has_known_faces": false,
+        "known_faces": []
       }
     } ]
 }
