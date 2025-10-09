@@ -3,10 +3,13 @@ data/descriptions.json
 data/complete_descriptions.txt
 data/*.json
 data/*.txt
+data/embeddings.npy
 !data/.gitkeep
 
 # Documentation - keep local workflow files
 docs/git-commands-guide.md
+docs/face-recognition-integration.md
+docs/semantic-search-implementation.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

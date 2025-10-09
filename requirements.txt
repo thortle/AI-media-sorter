@@ -7,6 +7,10 @@ tqdm>=4.64.0
 click>=8.0.0
 requests>=2.32.0
 
+# Semantic Search
+sentence-transformers>=2.2.0
+scikit-learn>=1.3.0
+
 # Facial Recognition (Optional)
 deepface>=0.0.79
 tf-keras>=2.16.0
