@@ -4,11 +4,23 @@ A self-hosted photo library with semantic search powered by AI-generated descrip
 
 ## Current Status
 
-- **8,318 photos** indexed with AI descriptions (Moondream2 VLM)
-- **Semantic search** using `all-MiniLM-L12-v2` embeddings
+- **8,313 photos** indexed with AI descriptions (Moondream2 VLM)
+- **Semantic search** using `all-MiniLM-L12-v2` embeddings (384 dimensions)
+- **Hybrid search** with 25% minimum threshold and 500 max results
 - **Query expansion** for compound concepts ("family dinner", "sad people")
+- **Keyword boosting** (+15% per match, max 30%)
 - **FastAPI server** in Docker with HEIC support
-- **Thumbnail validation** using CLIP
+- **CLIP tag corrections** applied (2,380 fixes for has_cars/has_dogs/has_characters)
+- **Browse All** feature with pagination (500 photos per page)
+- **Filter options** for People, Dogs, and Cars
+- **Tailscale remote access** configured
+
+## Access URLs
+
+| Location | URL |
+|----------|-----|
+| Local | http://localhost:8000 |
+| Tailscale (Mac) | http://100.74.155.87:8000 |
 
 ## Quick Start
 
@@ -17,7 +29,17 @@ A self-hosted photo library with semantic search powered by AI-generated descrip
 cd photo-server
 docker compose up -d
 
-# Access at http://localhost:8000
+# Stop server
+docker compose down
+
+# Rebuild after changes
+docker compose build && docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Check SSD mounted
+ls /Volumes/T7_SSD/G-photos
 ```
 
 ## Architecture
@@ -40,15 +62,13 @@ media_sorter/
 │   ├── thumbnails/         # Generated thumbnails (400x400)
 │   └── docker-compose.yml
 ├── data/
-│   ├── descriptions.json   # Photo metadata (8,318 entries)
-│   ├── embeddings.npy      # L12 embeddings (8318, 384)
+│   ├── descriptions.json   # Photo metadata (8,313 entries)
+│   ├── embeddings.npy      # L12 embeddings (8313, 384)
 │   └── search_history.jsonl
 ├── scripts/
 │   ├── generate/           # VLM description generation
 │   ├── embeddings/         # Embedding creation
-│   ├── facial_recognition/ # Face recognition (optional)
-│   ├── detect_mismatches_fast.py  # CLIP thumbnail validation
-│   └── fix_thumbnails.py   # Regenerate bad thumbnails
+│   └── facial_recognition/ # Face recognition (optional)
 └── docs/                   # Additional documentation
 ```
 
@@ -59,6 +79,8 @@ Uses sentence-transformers to understand meaning, not just keywords:
 - "red hair" finds "ginger", "auburn", "copper-colored"
 - "dog" finds "puppy", "canine", "retriever"
 
+**Settings:** 25% minimum similarity threshold, 500 max results per search.
+
 ### Query Expansion
 Compound concepts are expanded for better matching:
 ```python
@@ -67,7 +89,16 @@ Compound concepts are expanded for better matching:
 ```
 
 ### Keyword Boosting
-Exact phrase matches get a small boost (3-5%) to break ties between semantically similar results.
+Exact phrase matches get a boost (+15% per match, max 30%) to prioritize direct matches.
+
+### Browse All
+Click the Browse All button to paginate through all photos (500 per page) with Next/Previous navigation.
+
+### Filters
+Quick filters available for:
+- People (has_characters)
+- Dogs (has_dogs)
+- Cars (has_cars)
 
 ## API Endpoints
 
@@ -91,16 +122,6 @@ python3 create_embeddings.py
 docker compose -f ../../photo-server/docker-compose.yml restart
 ```
 
-### Detect Thumbnail Mismatches
-```bash
-python3 scripts/detect_mismatches_fast.py --batch-size 32
-```
-
-### Fix Mismatched Thumbnails
-```bash
-python3 scripts/fix_thumbnails.py
-```
-
 ### Add Query Expansions
 Edit `QUERY_EXPANSIONS` dict in `photo-server/app/search.py` when searches return poor results.
 
@@ -117,11 +138,12 @@ Edit `QUERY_EXPANSIONS` dict in `photo-server/app/search.py` when searches retur
 ## Tech Stack
 
 - **VLM**: Moondream2 (description generation)
-- **Embeddings**: sentence-transformers/all-MiniLM-L12-v2
+- **Embeddings**: sentence-transformers/all-MiniLM-L12-v2 (384 dimensions)
 - **Server**: FastAPI + Uvicorn
 - **HEIC Support**: pillow-heif
-- **Thumbnail Validation**: CLIP (openai/clip-vit-base-patch32)
+- **Tag Validation**: CLIP (openai/clip-vit-base-patch32)
 - **Container**: Docker
+- **Remote Access**: Tailscale
 
 ## Security Note
 
