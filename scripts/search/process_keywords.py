@@ -176,7 +176,7 @@ Rules:
         with open(input_file, 'w', encoding='utf-8') as f:  # Same file
             json.dump(data, f, indent=2, ensure_ascii=False)
         
-        print(f"✅ Finished processing {processed_count} photos")
+        print(f"Finished processing {processed_count} photos")
         print(f"Results saved to {input_file}")
 
 def main():
@@ -193,11 +193,11 @@ def main():
     
     if args.test:
         # Test mode: process only specified number of photos
-        print(f"🧪 Test mode: Processing only {args.test} photos")
+        print(f"Test mode: Processing only {args.test} photos")
         processor.process_json_file(input_file, start_from=0, batch_size=args.test, max_photos=args.test)
     else:
         # Default mode: process all photos
-        print("🚀 Processing all photos in the gallery")
+        print("Processing all photos in the gallery")
         processor.process_json_file(input_file, start_from=0, batch_size=50)
 
 if __name__ == "__main__":

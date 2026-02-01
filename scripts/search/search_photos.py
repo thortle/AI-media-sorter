@@ -19,21 +19,21 @@ class PhotoSearchEngine:
                 data = json.load(f)
                 self.photos = data['photos']
                 total_photos = data.get('metadata', {}).get('total_photos', len(self.photos))
-                print(f"✅ Loaded {len(self.photos)} photos from {total_photos} total")
+                print(f"Loaded {len(self.photos)} photos from {total_photos} total")
         except FileNotFoundError:
-            print(f"❌ Error: Could not find {self.descriptions_file}")
+            print(f"Error: Could not find {self.descriptions_file}")
             sys.exit(1)
         except json.JSONDecodeError:
-            print(f"❌ Error: Invalid JSON in {self.descriptions_file}")
+            print(f"Error: Invalid JSON in {self.descriptions_file}")
             sys.exit(1)
     
     def set_proximity(self, distance):
         """Set proximity distance for keyword matching"""
         try:
             self.proximity_distance = int(distance)
-            print(f"🔧 Proximity distance set to: {self.proximity_distance} words")
+            print(f"Proximity distance set to: {self.proximity_distance} words")
         except ValueError:
-            print(f"❌ Invalid proximity distance: {distance}. Use a number")
+            print(f"Invalid proximity distance: {distance}. Use a number")
     
     def parse_query(self, query):
         """Parse query to extract AND/OR groups and logic"""
@@ -334,7 +334,7 @@ class PhotoSearchEngine:
         
         # Generate search description
         search_desc = self.generate_search_description(parsed_query)
-        print(f"🔍 {search_desc}")
+        print(f"{search_desc}")
         print("─" * 60)
         
         results = []
@@ -355,7 +355,7 @@ class PhotoSearchEngine:
     
     def search_by_face_recognition(self):
         """Search for photos containing known faces (me)"""
-        print(f"🔍 Searching for: Photos with recognized faces (you)")
+        print(f"Searching for: Photos with recognized faces (you)")
         print("─" * 60)
         
         results = []
@@ -432,24 +432,24 @@ class PhotoSearchEngine:
     def display_results(self, results, show_stats=True):
         """Display search results in a formatted way"""
         if not results:
-            print("❌ No results found.")
-            print("\n💡 Tips:")
+            print("No results found.")
+            print("\nTips:")
             print("   • Use 'or' for broader results: 'dog or cat'")
             print("   • Use 'and' for additional requirements: 'red hair and woman'")
             print(f"   • Adjacent words are automatically grouped (≤{self.proximity_distance} apart)")
             print("   • Check spelling and try partial words")
             return
         
-        print(f"✅ Found {len(results)} result(s):")
+        print(f"Found {len(results)} result(s):")
         print()
         
         for i, result in enumerate(results, 1):
             # Header with filename
-            print(f"{i:2d}. 📁 {result['filename']}")
+            print(f"{i:2d}. {result['filename']}")
             
             # Show context for each match group
             for match_label, contexts in result['matches'].items():
-                print(f"     🔎 '{match_label}':")
+                print(f"     '{match_label}':")
                 for context in contexts:
                     print(f"        ...{context}...")
             
@@ -457,10 +457,10 @@ class PhotoSearchEngine:
             if show_stats:
                 word_count = result.get('word_count', 0)
                 desc_length = result.get('description_length', 0)
-                print(f"     📊 {word_count} words, {desc_length} chars")
+                print(f"     {word_count} words, {desc_length} chars")
             
             # Full path
-            print(f"     📂 {result['full_path']}")
+            print(f"     {result['full_path']}")
             print()
 
 def main():
@@ -469,28 +469,28 @@ def main():
     
     # Check if file exists
     if not descriptions_file.exists():
-        print(f"❌ Error: descriptions.json not found at {descriptions_file}")
+        print(f"Error: descriptions.json not found at {descriptions_file}")
         print("Make sure you're running this script from the scripts/search directory")
         sys.exit(1)
     
     # Initialize search engine
     search_engine = PhotoSearchEngine(descriptions_file)
     
-    print("🖼️  Smart Photo Search Tool")
+    print("Smart Photo Search Tool")
     print("=" * 60)
-    print("🧠 Smart Query Parser:")
-    print("  • 'red hair' → red AND hair close together")
-    print("  • 'red or hair' → red OR hair (either one)")
-    print("  • 'red hair and dog' → (red + hair close) AND dog anywhere")
-    print("  • 'red hair or blue eyes' → (red + hair) OR (blue + eyes)")
-    print("  • 'me' → photos with your face (requires face recognition)")
+    print("Smart Query Parser:")
+    print("  - 'red hair' -> red AND hair close together")
+    print("  - 'red or hair' -> red OR hair (either one)")
+    print("  - 'red hair and dog' -> (red + hair close) AND dog anywhere")
+    print("  - 'red hair or blue eyes' -> (red + hair) OR (blue + eyes)")
+    print("  - 'me' -> photos with your face (requires face recognition)")
     print()
-    print("🔧 Commands:")
-    print("  • Set proximity: 'proximity 5' (max words between keywords)")
-    print("  • Statistics: 'stats'")
-    print("  • Quit: 'quit', 'exit', or 'q'")
+    print("Commands:")
+    print("  - Set proximity: 'proximity 5' (max words between keywords)")
+    print("  - Statistics: 'stats'")
+    print("  - Quit: 'quit', 'exit', or 'q'")
     print()
-    print(f"📏 Current proximity: {search_engine.proximity_distance} words apart")
+    print(f"Current proximity: {search_engine.proximity_distance} words apart")
     print()
     
     while True:
@@ -499,7 +499,7 @@ def main():
             
             # Handle special commands
             if query.lower() in ['quit', 'exit', 'q']:
-                print("👋 Goodbye!")
+                print("Goodbye!")
                 break
             
             # Handle proximity setting
@@ -509,7 +509,7 @@ def main():
                 continue
             
             if query.lower() == 'stats':
-                print(f"📊 Collection Statistics:")
+                print(f"Collection Statistics:")
                 print(f"   Total photos: {len(search_engine.photos)}")
                 print(f"   Proximity distance: {search_engine.proximity_distance} words")
                 
@@ -549,10 +549,10 @@ def main():
             print("─" * 60)
             
         except KeyboardInterrupt:
-            print("\n👋 Goodbye!")
+            print("\nGoodbye!")
             break
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
             print("Please try again or type 'quit' to exit")
 
 if __name__ == "__main__":

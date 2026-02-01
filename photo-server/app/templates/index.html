@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Server</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #16213e;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #e94560;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #0f3460;
+            color: #fff;
+        }
+
+        .search-box input::placeholder {
+            color: #888;
+        }
+
+        .search-box button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: #e94560;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-box button:hover {
+            background: #ff6b6b;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #0f3460;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .filter-item:hover {
+            background: #1a4a7a;
+        }
+
+        .filter-item.active {
+            background: #e94560;
+        }
+
+        .filter-item input {
+            display: none;
+        }
+
+        .stats {
+            padding: 0.5rem 2rem;
+            background: #16213e;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .main {
+            padding: 1rem 2rem 2rem;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .photo-card {
+            background: #16213e;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-card .info {
+            padding: 0.75rem;
+        }
+
+        .photo-card .filename {
+            font-size: 0.85rem;
+            color: #aaa;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .photo-card .similarity {
+            font-size: 0.8rem;
+            color: #e94560;
+            margin-top: 0.25rem;
+        }
+
+        .photo-card .tags {
+            display: flex;
+            gap: 0.25rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .photo-card .tag {
+            font-size: 0.7rem;
+            background: #0f3460;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            color: #aaa;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            overflow: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: #16213e;
+        }
+
+        .modal-header h3 {
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .modal-actions button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .btn-download {
+            background: #e94560;
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: #ff6b6b;
+        }
+
+        .btn-close {
+            background: #333;
+            color: white;
+        }
+
+        .btn-close:hover {
+            background: #555;
+        }
+
+        .modal-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: calc(100vh - 200px);
+            object-fit: contain;
+        }
+
+        .modal-description {
+            max-width: 800px;
+            padding: 1rem;
+            color: #aaa;
+            text-align: center;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* Modal navigation arrows */
+        .modal-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(233, 69, 96, 0.8);
+            border: none;
+            color: white;
+            font-size: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 1001;
+        }
+
+        .modal-nav:hover {
+            background: rgba(233, 69, 96, 1);
+        }
+
+        .modal-nav:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .modal-nav-left {
+            left: 1rem;
+        }
+
+        .modal-nav-right {
+            right: 1rem;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e94560;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .pagination button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: #0f3460;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #1a4a7a;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            display: flex;
+            align-items: center;
+            color: #888;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 0.5rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Photo Server</h1>
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search photos... (e.g., 'beach sunset', 'family dinner')">
+                <button onclick="performSearch()">Search</button>
+                <button onclick="browseAll()" style="background: #0f3460;">Browse All</button>
+            </div>
+            <div class="filters">
+                <label class="filter-item" id="filterCharacters">
+                    <input type="checkbox" onchange="toggleFilter('characters')">
+                    <span>People</span>
+                </label>
+                <label class="filter-item" id="filterDogs">
+                    <input type="checkbox" onchange="toggleFilter('dogs')">
+                    <span>Dogs</span>
+                </label>
+                <label class="filter-item" id="filterCars">
+                    <input type="checkbox" onchange="toggleFilter('cars')">
+                    <span>Cars</span>
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <div class="stats" id="stats">Loading...</div>
+
+    <main class="main">
+        <div class="photo-grid" id="photoGrid"></div>
+        <div class="loading" id="loading" style="display: none;">Loading photos</div>
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <h2>No photos found</h2>
+            <p>Try a different search or adjust your filters</p>
+        </div>
+        <div class="pagination" id="pagination" style="display: none;">
+            <button onclick="prevPage()" id="prevBtn">← Previous</button>
+            <span class="page-info" id="pageInfo"></span>
+            <button onclick="nextPage()" id="nextBtn">Next →</button>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <button class="modal-nav modal-nav-left" id="modalPrevBtn" onclick="navigateModal(-1)" title="Previous (←)">‹</button>
+        <button class="modal-nav modal-nav-right" id="modalNextBtn" onclick="navigateModal(1)" title="Next (→)">›</button>
+        <div class="modal-header">
+            <h3 id="modalTitle">Photo</h3>
+            <div class="modal-actions">
+                <button class="btn-download" onclick="downloadPhoto()">Download</button>
+                <button class="btn-delete" onclick="deletePhoto()" style="background: #c0392b; color: white;">Delete</button>
+                <button class="btn-close" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+        <div class="modal-content">
+            <div id="imageError" style="display: none;"></div>
+            <img id="modalImage" src="" alt="">
+            <p class="modal-description" id="modalDescription"></p>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentQuery = '';
+        let currentPage = 0;
+        let totalPhotos = 0;
+        let currentFilename = '';
+        let currentPhotoIndex = -1;
+        let currentPhotos = [];
+        const pageSize = 500;  // Show more results
+        const minScore = 0.25;  // Fixed 25% minimum match (realistic for semantic search)
+        const filters = {
+            characters: null,
+            dogs: null,
+            cars: null
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadPhotos();
+            
+            // Enter key to search
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeModal();
+                
+                // Arrow navigation in modal
+                if (document.getElementById('modal').classList.contains('active')) {
+                    if (e.key === 'ArrowLeft') navigateModal(-1);
+                    if (e.key === 'ArrowRight') navigateModal(1);
+                }
+            });
+        });
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                document.getElementById('stats').textContent = 
+                    `${data.total_photos.toLocaleString()} photos | ${data.with_characters.toLocaleString()} with people | ${data.with_dogs.toLocaleString()} with dogs | ${data.with_cars.toLocaleString()} with cars`;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        async function loadPhotos() {
+            const grid = document.getElementById('photoGrid');
+            const loading = document.getElementById('loading');
+            const emptyState = document.getElementById('emptyState');
+            const pagination = document.getElementById('pagination');
+
+            grid.innerHTML = '';
+            loading.style.display = 'block';
+            emptyState.style.display = 'none';
+            pagination.style.display = 'none';
+
+            try {
+                let url;
+                if (currentQuery) {
+                    // Semantic search with hybrid scoring
+                    url = `/api/search?q=${encodeURIComponent(currentQuery)}&limit=${pageSize}&min_score=${minScore}`;
+                    if (filters.characters !== null) url += `&has_characters=${filters.characters}`;
+                    if (filters.dogs !== null) url += `&has_dogs=${filters.dogs}`;
+                    if (filters.cars !== null) url += `&has_cars=${filters.cars}`;
+                } else {
+                    // Browse all
+                    url = `/api/photos?limit=${pageSize}&offset=${currentPage * pageSize}`;
+                    if (filters.characters !== null) url += `&has_characters=${filters.characters}`;
+                    if (filters.dogs !== null) url += `&has_dogs=${filters.dogs}`;
+                    if (filters.cars !== null) url += `&has_cars=${filters.cars}`;
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                let photos = data.results || data.photos;
+                totalPhotos = data.total || data.count;
+
+                if (photos.length === 0) {
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                // Store current photos for modal navigation
+                currentPhotos = photos;
+
+                // Render photos
+                photos.forEach((photo, index) => {
+                    const card = createPhotoCard(photo, index);
+                    grid.appendChild(card);
+                });
+
+                // Show pagination for browse mode (when not searching or when there are multiple pages)
+                if (totalPhotos > pageSize) {
+                    pagination.style.display = 'flex';
+                    updatePagination();
+                } else if (!currentQuery) {
+                    // Show pagination info even on first page
+                    pagination.style.display = 'flex';
+                    updatePagination();
+                }
+
+            } catch (error) {
+                console.error('Failed to load photos:', error);
+                loading.style.display = 'none';
+                emptyState.style.display = 'block';
+                emptyState.querySelector('h2').textContent = 'Error loading photos';
+                emptyState.querySelector('p').textContent = error.message;
+            }
+        }
+
+        function createPhotoCard(photo, index) {
+            const card = document.createElement('div');
+            card.className = 'photo-card';
+            card.onclick = () => openModal(photo, index);
+
+            const tags = [];
+            if (photo.keywords?.has_characters) tags.push('People');
+            if (photo.keywords?.has_dogs) tags.push('Dogs');
+            if (photo.keywords?.has_cars) tags.push('Cars');
+
+            card.innerHTML = `
+                <img src="/thumbnail/${encodeURIComponent(photo.filename)}" 
+                     alt="${photo.filename}"
+                     loading="lazy"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 fill=%22%23666%22 text-anchor=%22middle%22 dy=%22.3em%22>No thumb</text></svg>'">
+                <div class="info">
+                    <div class="filename">${photo.filename}</div>
+                    ${photo.similarity !== undefined ? `<div class="similarity">${(photo.similarity * 100).toFixed(1)}% match</div>` : ''}
+                    ${tags.length > 0 ? `<div class="tags">${tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+                </div>
+            `;
+
+            return card;
+        }
+
+        function performSearch() {
+            const input = document.getElementById('searchInput');
+            currentQuery = input.value.trim();
+            currentPage = 0;
+            loadPhotos();
+        }
+
+        function browseAll() {
+            document.getElementById('searchInput').value = '';
+            currentQuery = '';
+            currentPage = 0;
+            // Reset filters
+            Object.keys(filters).forEach(key => filters[key] = null);
+            document.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.filter-item input').forEach(el => el.checked = false);
+            loadPhotos();
+        }
+
+        function navigateModal(direction) {
+            const newIndex = currentPhotoIndex + direction;
+            if (newIndex >= 0 && newIndex < currentPhotos.length) {
+                openModal(currentPhotos[newIndex], newIndex);
+            }
+        }
+
+        function updateModalNavButtons() {
+            const prevBtn = document.getElementById('modalPrevBtn');
+            const nextBtn = document.getElementById('modalNextBtn');
+            
+            prevBtn.disabled = currentPhotoIndex <= 0;
+            nextBtn.disabled = currentPhotoIndex >= currentPhotos.length - 1;
+        }
+
+        function toggleFilter(type) {
+            const element = document.getElementById(`filter${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            const checkbox = element.querySelector('input');
+            
+            if (filters[type] === null) {
+                filters[type] = true;
+                element.classList.add('active');
+                checkbox.checked = true;
+            } else if (filters[type] === true) {
+                filters[type] = null;
+                element.classList.remove('active');
+                checkbox.checked = false;
+            }
+            
+            currentPage = 0;
+            loadPhotos();
+        }
+
+        function openModal(photo, index) {
+            currentFilename = photo.filename;
+            currentPhotoIndex = index !== undefined ? index : currentPhotos.findIndex(p => p.filename === photo.filename);
+            const modal = document.getElementById('modal');
+            const image = document.getElementById('modalImage');
+            const title = document.getElementById('modalTitle');
+            const description = document.getElementById('modalDescription');
+            const imageError = document.getElementById('imageError');
+
+            title.textContent = photo.filename;
+            description.textContent = photo.description || '';
+            
+            // Update navigation buttons
+            updateModalNavButtons();
+            
+            // Reset state
+            image.style.display = 'none';
+            imageError.style.display = 'none';
+            
+            // Try to load the image (server handles HEIC conversion)
+            image.onload = () => {
+                image.style.display = 'block';
+                imageError.style.display = 'none';
+            };
+            image.onerror = () => {
+                image.style.display = 'none';
+                imageError.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #888;">
+                        <div>Failed to load image</div>
+                        <div style="margin-top: 0.5rem;">Click "Download" to view this photo</div>
+                    </div>
+                `;
+                imageError.style.display = 'block';
+            };
+            image.src = `/photo/${encodeURIComponent(photo.filename)}`;
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function downloadPhoto() {
+            if (currentFilename) {
+                window.location.href = `/download/${encodeURIComponent(currentFilename)}`;
+            }
+        }
+
+        async function deletePhoto() {
+            if (!currentFilename) return;
+            
+            const confirmed = confirm(`Are you sure you want to delete "${currentFilename}"?\n\nThe photo will be moved to the trash folder and can be recovered manually if needed.`);
+            
+            if (!confirmed) return;
+            
+            try {
+                const response = await fetch(`/api/photo/${encodeURIComponent(currentFilename)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to delete photo');
+                }
+                
+                const result = await response.json();
+                
+                // Close modal and refresh the grid
+                closeModal();
+                loadStats();
+                loadPhotos();
+                
+                // Show brief success message
+                console.log('Photo deleted:', result.message);
+                
+            } catch (error) {
+                alert(`Failed to delete photo: ${error.message}`);
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                loadPhotos();
+            }
+        }
+
+        function nextPage() {
+            if ((currentPage + 1) * pageSize < totalPhotos) {
+                currentPage++;
+                loadPhotos();
+            }
+        }
+
+        function updatePagination() {
+            const pageInfo = document.getElementById('pageInfo');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            const start = currentPage * pageSize + 1;
+            const end = Math.min((currentPage + 1) * pageSize, totalPhotos);
+            pageInfo.textContent = `${start}-${end} of ${totalPhotos.toLocaleString()}`;
+            
+            prevBtn.disabled = currentPage === 0;
+            nextBtn.disabled = end >= totalPhotos;
+        }
+
+        // Click outside modal to close
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal' || e.target.classList.contains('modal-content')) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

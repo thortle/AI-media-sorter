@@ -163,8 +163,8 @@ class DescriptionConverter:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(json_data, f, indent=2, ensure_ascii=False)
             
-            print(f"✅ Successfully converted {len(descriptions)} descriptions to {output_file}")
-            print(f"📊 Total photos: {len(descriptions)}")
+            print(f"Successfully converted {len(descriptions)} descriptions to {output_file}")
+            print(f"Total photos: {len(descriptions)}")
             
             # Show some statistics
             self._show_conversion_stats(descriptions)
@@ -172,7 +172,7 @@ class DescriptionConverter:
             return True
             
         except Exception as e:
-            print(f"❌ Error writing JSON file: {e}")
+            print(f"Error writing JSON file: {e}")
             return False
     
     def _show_conversion_stats(self, descriptions: List[Dict[str, Any]]) -> None:
@@ -189,7 +189,7 @@ class DescriptionConverter:
             extensions[ext] = extensions.get(ext, 0) + 1
             total_keywords += len(desc['keywords'])
         
-        print(f"\n📈 Conversion Statistics:")
+        print(f"\nConversion Statistics:")
         print(f"   File types: {dict(sorted(extensions.items()))}")
         print(f"   Average keywords per photo: {total_keywords / len(descriptions):.1f}")
         print(f"   Average description length: {sum(d['metadata']['description_length'] for d in descriptions) / len(descriptions):.0f} chars")
@@ -212,7 +212,7 @@ def main():
                 break
         
         if not descriptions_file:
-            print("❌ Error: Could not find descriptions file!")
+            print("Error: Could not find descriptions file!")
             print("Please provide path: python3 json_converter.py <descriptions_file>")
             sys.exit(1)
             
@@ -223,7 +223,7 @@ def main():
     
     # Check if input file exists
     if not Path(descriptions_file).exists():
-        print(f"❌ Error: Input file '{descriptions_file}' not found!")
+        print(f"Error: Input file '{descriptions_file}' not found!")
         print("\nUsage: python3 json_converter.py <descriptions_file> [output_file]")
         print("Example: python3 json_converter.py /path/to/descriptions.txt ../../data/descriptions.json")
         sys.exit(1)
@@ -235,9 +235,9 @@ def main():
     success = converter.convert_to_json(descriptions_file, output_file)
     
     if success:
-        print(f"\n🎉 JSON conversion complete! You can now use {output_file} for searching.")
+        print(f"\nJSON conversion complete! You can now use {output_file} for searching.")
     else:
-        print("❌ Conversion failed!")
+        print("Conversion failed!")
         sys.exit(1)
 
 if __name__ == "__main__":

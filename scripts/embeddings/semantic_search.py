@@ -47,7 +47,7 @@ class SemanticPhotoSearch:
         print(f"  Loading embeddings from {self.embeddings_path}...")
         self.embeddings = np.load(self.embeddings_path)
         
-        print(f"✅ Loaded {len(self.photos)} photos with embeddings")
+        print(f"Loaded {len(self.photos)} photos with embeddings")
         
         # Verify consistency
         if len(self.photos) != len(self.embeddings):
@@ -95,7 +95,7 @@ class SemanticPhotoSearch:
     
     def search_by_face_recognition(self):
         """Search for photos containing known faces (me)"""
-        print(f"🔍 Searching for: Photos with recognized faces (you)")
+        print(f"Searching for: Photos with recognized faces (you)")
         print("─" * 60)
         
         results = []
@@ -124,7 +124,7 @@ class SemanticPhotoSearch:
     def display_results(self, results, query):
         """Display search results in a formatted way"""
         print("\n" + "="*60)
-        print(f"🔍 Semantic Search: \"{query}\"")
+        print(f"Semantic Search: \"{query}\"")
         print("="*60)
         
         if not results:
@@ -139,14 +139,14 @@ class SemanticPhotoSearch:
             rank = result['rank']
             
             # Display rank and similarity
-            print(f"{rank}. 📊 Similarity: {similarity:.3f}")
+            print(f"{rank}. Similarity: {similarity:.3f}")
             
             # Display filename
-            print(f"   📸 {photo['filename']}")
+            print(f"   {photo['filename']}")
             
             # If this is a face recognition result, show face info
             if 'known_faces' in result:
-                print(f"   👤 Face Recognition:")
+                print(f"   Face Recognition:")
                 for face in result['known_faces']:
                     confidence = face.get('match_confidence', 0)
                     ref_image = face.get('reference_image', 'unknown')
@@ -156,10 +156,10 @@ class SemanticPhotoSearch:
                 description = photo['description']
                 if len(description) > 200:
                     description = description[:197] + "..."
-                print(f"   📝 {description}")
+                print(f"   {description}")
             
             # Display full path
-            print(f"   📂 {photo['full_path']}")
+            print(f"   {photo['full_path']}")
             print()
 
 def main():
@@ -169,11 +169,11 @@ def main():
     
     # Check if files exist
     if not Path(descriptions_path).exists():
-        print(f"❌ Error: {descriptions_path} not found!")
+        print(f"Error: {descriptions_path} not found!")
         sys.exit(1)
     
     if not Path(embeddings_path).exists():
-        print(f"❌ Error: {embeddings_path} not found!")
+        print(f"Error: {embeddings_path} not found!")
         print("Please run create_embeddings.py first.")
         sys.exit(1)
     
@@ -183,7 +183,7 @@ def main():
     
     # Interactive search loop
     print("\n" + "="*60)
-    print("🧠 Semantic Photo Search")
+    print("Semantic Photo Search")
     print("="*60)
     print("\nExamples:")
     print("  • 'red hair and dog' - finds ginger-haired people with puppies")
@@ -202,13 +202,13 @@ def main():
     
     while True:
         try:
-            query = input("🔍 Search: ").strip()
+            query = input("Search: ").strip()
             
             if not query:
                 continue
             
             if query.lower() in ['quit', 'exit', 'q']:
-                print("Goodbye! 👋")
+                print("Goodbye!")
                 break
             
             # Special case: search for "me" using face recognition
@@ -221,19 +221,19 @@ def main():
             if query.lower().startswith('threshold '):
                 try:
                     threshold = float(query.split()[1])
-                    print(f"✅ Threshold set to {threshold}")
+                    print(f"Threshold set to {threshold}")
                     continue
                 except:
-                    print("❌ Invalid threshold. Use: threshold 0.3")
+                    print("Invalid threshold. Use: threshold 0.3")
                     continue
             
             if query.lower().startswith('top '):
                 try:
                     top_k = int(query.split()[1])
-                    print(f"✅ Top results set to {top_k}")
+                    print(f"Top results set to {top_k}")
                     continue
                 except:
-                    print("❌ Invalid number. Use: top 20")
+                    print("Invalid number. Use: top 20")
                     continue
             
             # Perform search
@@ -241,10 +241,10 @@ def main():
             search_engine.display_results(results, query)
             
         except KeyboardInterrupt:
-            print("\n\nGoodbye! 👋")
+            print("\n\nGoodbye!")
             break
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()

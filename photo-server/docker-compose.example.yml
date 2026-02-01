@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  photo-server:
+    build: .
+    container_name: photo-server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Data files (embeddings, descriptions) - read-write for search logging
+      - ../data:/app/data
+      # Generated thumbnails - read-write for deletion
+      - ./thumbnails:/app/thumbnails
+      # Original photos - UPDATE THIS PATH to your photo directory
+      - /path/to/your/photos:/photos
+    environment:
+      - PHOTO_BASE_PATH=/photos
+      - THUMBNAIL_PATH=/app/thumbnails
+      - DATA_PATH=/app/data
+      # Authentication - CHANGE THESE!
+      - AUTH_USERNAME=your_username
+      - AUTH_PASSWORD=your_secure_password

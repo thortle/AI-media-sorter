@@ -27,7 +27,7 @@ class EmbeddingCreator:
         """Load the sentence transformer model"""
         print(f"Loading model: {self.model_name}...")
         self.model = SentenceTransformer(self.model_name)
-        print(f"✅ Model loaded successfully")
+        print(f"Model loaded successfully")
         print(f"   Embedding dimensions: {self.model.get_sentence_embedding_dimension()}")
         
     def load_descriptions(self, json_path):
@@ -37,7 +37,7 @@ class EmbeddingCreator:
             data = json.load(f)
         
         photos = data.get('photos', [])
-        print(f"✅ Loaded {len(photos)} photo descriptions")
+        print(f"Loaded {len(photos)} photo descriptions")
         return photos
     
     def create_embeddings(self, photos, batch_size=32):
@@ -66,7 +66,7 @@ class EmbeddingCreator:
             normalize_embeddings=True  # Normalize for cosine similarity
         )
         
-        print(f"✅ Created embeddings with shape: {embeddings.shape}")
+        print(f"Created embeddings with shape: {embeddings.shape}")
         return embeddings
     
     def save_embeddings(self, embeddings, output_path):
@@ -85,7 +85,7 @@ class EmbeddingCreator:
         with open(metadata_path, 'w') as f:
             json.dump(metadata, f, indent=2)
         
-        print(f"✅ Embeddings saved successfully")
+        print(f"Embeddings saved successfully")
         print(f"   Size: {embeddings.nbytes / 1024 / 1024:.2f} MB")
 
 def main():
@@ -95,12 +95,12 @@ def main():
     
     # Check if descriptions.json exists
     if not Path(json_path).exists():
-        print(f"❌ Error: {json_path} not found!")
+        print(f"Error: {json_path} not found!")
         print("Please run the description generator first.")
         sys.exit(1)
     
     # Create embeddings
-    creator = EmbeddingCreator(model_name='all-MiniLM-L6-v2')
+    creator = EmbeddingCreator(model_name='all-MiniLM-L12-v2')
     creator.load_model()
     
     photos = creator.load_descriptions(json_path)
@@ -108,7 +108,7 @@ def main():
     creator.save_embeddings(embeddings, embeddings_path)
     
     print("\n" + "="*60)
-    print("🎉 Embedding creation complete!")
+    print("Embedding creation complete!")
     print("="*60)
 
 if __name__ == "__main__":

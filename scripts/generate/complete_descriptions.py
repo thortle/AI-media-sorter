@@ -225,8 +225,8 @@ class DescriptionCompleter:
 
 def main():
     """Main function"""
-    # Path to descriptions.json file
-    descriptions_file = "/Users/thortle/Desktop/media_sorter/sorting/descriptions.json"
+    # Path to descriptions.json file (relative to script location)
+    descriptions_file = str(Path(__file__).parent.parent.parent / "data" / "descriptions.json")
     
     if not os.path.exists(descriptions_file):
         logger.error(f"Descriptions file not found: {descriptions_file}")
