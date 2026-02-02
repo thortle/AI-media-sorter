@@ -19,5 +19,3 @@ services:
       - THUMBNAIL_PATH=/app/thumbnails
       - DATA_PATH=/app/data
       # Authentication
-      - AUTH_USERNAME=thortle
-      - AUTH_PASSWORD=pozeleNOASTRE
