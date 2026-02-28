@@ -5,6 +5,7 @@ Transforms the text-based descriptions file into a searchable JSON database
 """
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -15,7 +16,9 @@ class DescriptionConverter:
     Converts text-based descriptions to structured JSON format
     """
     
-    def __init__(self, source_dir: str = "/Volumes/T7_SSD/G-photos"):
+    def __init__(self, source_dir: str = None):
+        if source_dir is None:
+            source_dir = os.getenv("PHOTO_DIR", "/path/to/your/photos")
         self.source_dir = Path(source_dir)
         
     def parse_descriptions_file(self, descriptions_file: str) -> List[Dict[str, Any]]:

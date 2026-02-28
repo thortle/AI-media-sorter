@@ -2,6 +2,10 @@
 photo-server/docker-compose.yml
 HOMELAB_SETUP_PLAN.md
 manual-check.txt
+LOCAL_FILES.md
+
+# Environment files (copy .env.example → .env to configure locally)
+.env
 
 # Data files (keep local only)
 data/*.json
@@ -11,7 +15,7 @@ data/*.txt
 !data/.gitkeep
 
 # Thumbnails (generated, too large for git)
-photo-server/thumbnails/
+photo-server/thumbnails/*
 !photo-server/thumbnails/.gitkeep
 
 # Face recognition dataset

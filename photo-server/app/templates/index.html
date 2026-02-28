@@ -368,6 +368,223 @@
             margin-bottom: 0.5rem;
             color: #888;
         }
+
+        /* Album list */
+        .album-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .album-card {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+
+        .album-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            border-color: #e94560;
+        }
+
+        .album-icon {
+            font-size: 3rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .album-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #eee;
+            margin-bottom: 0.4rem;
+            word-break: break-word;
+        }
+
+        .album-count {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        /* Album breadcrumb bar */
+        .album-breadcrumb {
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 2rem;
+            background: #0f3460;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .album-breadcrumb button {
+            background: none;
+            border: 1px solid #e94560;
+            color: #e94560;
+            padding: 0.3rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .album-breadcrumb button:hover { background: rgba(233,69,96,0.1); }
+
+        .album-breadcrumb .crumb-name {
+            color: #eee;
+            font-weight: 500;
+        }
+
+        /* ── Mobile ────────────────────────────────────────────── */
+        @media (max-width: 600px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .header {
+                padding: 0.75rem 0.75rem 0.6rem;
+                overflow: hidden;
+            }
+
+            .header h1 {
+                font-size: 1.2rem;
+                margin-bottom: 0.6rem;
+            }
+
+            /* Two-column layout: search+buttons left, filter pills right */
+            .search-container {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                align-items: stretch;
+                gap: 0.5rem;
+                width: 100%;
+                overflow: hidden;
+            }
+
+            /* Left column: input on top, Search + Browse All below */
+            .search-box {
+                flex: 1 1 0;
+                min-width: 0;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.4rem;
+            }
+
+            .search-box input {
+                flex: 1 1 100%;
+                min-width: 0;
+                padding: 0.6rem 0.75rem;
+                font-size: 0.9rem;
+            }
+
+            .search-box button {
+                flex: 1 1 0;
+                min-width: 0;
+                padding: 0.6rem 0.25rem;
+                font-size: 0.85rem;
+            }
+
+            /* Right column: People / Dogs / Cars stacked vertically */
+            .filters {
+                flex: 0 0 68px;
+                display: flex;
+                flex-direction: column;
+                gap: 0.35rem;
+            }
+
+            .filter-item {
+                flex: 1;
+                min-width: 0;
+                padding: 0 0.3rem;
+                font-size: 0.75rem;
+                justify-content: center;
+                text-align: center;
+                border-radius: 10px;
+            }
+
+            .stats {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.8rem;
+            }
+
+            .main {
+                padding: 0.75rem 0.5rem 2rem;
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+
+            .photo-card img {
+                height: 150px;
+            }
+
+            .photo-card .info {
+                padding: 0.5rem;
+            }
+
+            /* Modal */
+            .modal-header {
+                padding: 0.6rem 0.75rem;
+                flex-wrap: wrap;
+                gap: 0.4rem;
+            }
+
+            .modal-header h3 {
+                font-size: 0.8rem;
+                width: 100%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .modal-actions {
+                width: 100%;
+                gap: 0.4rem;
+            }
+
+            .modal-actions button {
+                flex: 1;
+                padding: 0.45rem 0.25rem;
+                font-size: 0.8rem;
+            }
+
+            .modal-content {
+                padding: 0.5rem;
+            }
+
+            .modal-content img {
+                max-height: calc(100vh - 130px);
+            }
+
+            .modal-nav {
+                width: 38px;
+                height: 38px;
+                font-size: 1.4rem;
+            }
+
+            .modal-nav-left { left: 0.4rem; }
+            .modal-nav-right { right: 0.4rem; }
+
+            .pagination button {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .album-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .album-breadcrumb {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -378,6 +595,7 @@
                 <input type="text" id="searchInput" placeholder="Search photos... (e.g., 'beach sunset', 'family dinner')">
                 <button onclick="performSearch()">Search</button>
                 <button onclick="browseAll()" style="background: #0f3460;">Browse All</button>
+                <button onclick="showAlbums()" style="background: #0f3460;">Albums</button>
             </div>
             <div class="filters">
                 <label class="filter-item" id="filterCharacters">
@@ -398,7 +616,16 @@
 
     <div class="stats" id="stats">Loading...</div>
 
+    <!-- Album breadcrumb shown when browsing inside an album -->
+    <div class="album-breadcrumb" id="albumBreadcrumb">
+        <button onclick="backToAlbums()">← Albums</button>
+        <span class="crumb-name" id="albumBreadcrumbName"></span>
+    </div>
+
     <main class="main">
+        <!-- Album list (replaces photo grid when in albums mode) -->
+        <div class="album-grid" id="albumList" style="display:none;"></div>
+
         <div class="photo-grid" id="photoGrid"></div>
         <div class="loading" id="loading" style="display: none;">Loading photos</div>
         <div class="empty-state" id="emptyState" style="display: none;">
@@ -439,6 +666,9 @@
         let currentFilename = '';
         let currentPhotoIndex = -1;
         let currentPhotos = [];
+        let currentMode = 'main'; // 'main' | 'albums' | 'album'
+        let currentAlbum = null; // { name, photo_count }
+        let currentRelPath = ''; // rel_path of open album photo
         const pageSize = 500;  // Show more results
         const minScore = 0.25;  // Fixed 25% minimum match (realistic for semantic search)
         const filters = {
@@ -468,6 +698,163 @@
                 }
             });
         });
+
+        // ── Album functions ────────────────────────────────────────
+
+        function showAlbums() {
+            currentMode = 'albums';
+            document.getElementById('searchInput').value = '';
+            currentQuery = '';
+            document.getElementById('photoGrid').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('albumBreadcrumb').style.display = 'none';
+            loadAlbums();
+        }
+
+        async function loadAlbums() {
+            const albumList = document.getElementById('albumList');
+            const loading = document.getElementById('loading');
+            albumList.innerHTML = '';
+            albumList.style.display = 'grid';
+            loading.style.display = 'block';
+            try {
+                const response = await fetch('/api/albums');
+                const data = await response.json();
+                loading.style.display = 'none';
+                if (!data.albums.length) {
+                    albumList.innerHTML = '<p style="color:#888">No albums found.</p>';
+                    return;
+                }
+                data.albums.forEach(album => {
+                    const card = document.createElement('div');
+                    card.className = 'album-card';
+                    card.onclick = () => openAlbum(album);
+                    card.innerHTML = `
+                        <div class="album-icon">🖼️</div>
+                        <div class="album-name">${album.name}</div>
+                        <div class="album-count">${album.photo_count.toLocaleString()} photos</div>
+                    `;
+                    albumList.appendChild(card);
+                });
+            } catch (e) {
+                loading.style.display = 'none';
+                console.error('Failed to load albums:', e);
+            }
+        }
+
+        function openAlbum(album) {
+            currentMode = 'album';
+            currentAlbum = album;
+            currentPage = 0;
+            document.getElementById('albumList').style.display = 'none';
+            document.getElementById('photoGrid').style.display = 'grid';
+            const bc = document.getElementById('albumBreadcrumb');
+            bc.style.display = 'flex';
+            document.getElementById('albumBreadcrumbName').textContent = album.name;
+            loadAlbumPhotos();
+        }
+
+        function backToAlbums() {
+            currentMode = 'albums';
+            currentAlbum = null;
+            document.getElementById('albumBreadcrumb').style.display = 'none';
+            document.getElementById('photoGrid').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+            loadAlbums();
+        }
+
+        async function loadAlbumPhotos() {
+            const grid = document.getElementById('photoGrid');
+            const loading = document.getElementById('loading');
+            const emptyState = document.getElementById('emptyState');
+            const pagination = document.getElementById('pagination');
+
+            grid.innerHTML = '';
+            loading.style.display = 'block';
+            emptyState.style.display = 'none';
+            pagination.style.display = 'none';
+
+            try {
+                const url = `/api/album/${encodeURIComponent(currentAlbum.name)}/photos?limit=${pageSize}&offset=${currentPage * pageSize}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                loading.style.display = 'none';
+
+                const photos = data.photos;
+                totalPhotos = data.total;
+
+                if (!photos.length) {
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                currentPhotos = photos;
+                photos.forEach((photo, index) => {
+                    const card = createAlbumPhotoCard(photo, index);
+                    grid.appendChild(card);
+                });
+
+                pagination.style.display = 'flex';
+                updatePagination();
+            } catch (e) {
+                document.getElementById('loading').style.display = 'none';
+                console.error('Failed to load album photos:', e);
+            }
+        }
+
+        function createAlbumPhotoCard(photo, index) {
+            const card = document.createElement('div');
+            card.className = 'photo-card';
+            card.onclick = () => openAlbumModal(photo, index);
+            const thumbUrl = `/album-thumbnail/${encodeURIComponent(photo.album)}/${photo.rel_path}`;
+            card.innerHTML = `
+                <img src="${thumbUrl}"
+                     alt="${photo.filename}"
+                     loading="lazy"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 fill=%22%23666%22 text-anchor=%22middle%22 dy=%22.3em%22>No thumb</text></svg>'">
+                <div class="info">
+                    <div class="filename">${photo.filename}</div>
+                </div>
+            `;
+            return card;
+        }
+
+        function openAlbumModal(photo, index) {
+            currentFilename = photo.filename;
+            currentRelPath = photo.rel_path;
+            currentPhotoIndex = index;
+
+            const modal = document.getElementById('modal');
+            const image = document.getElementById('modalImage');
+            const title = document.getElementById('modalTitle');
+            const description = document.getElementById('modalDescription');
+            const imageError = document.getElementById('imageError');
+            const deleteBtn = document.querySelector('.btn-delete');
+
+            title.textContent = photo.filename;
+            description.textContent = '';
+            if (deleteBtn) deleteBtn.style.display = 'none';
+
+            updateModalNavButtons();
+
+            image.style.display = 'none';
+            imageError.style.display = 'none';
+
+            image.onload = () => { image.style.display = 'block'; imageError.style.display = 'none'; };
+            image.onerror = () => {
+                image.style.display = 'none';
+                imageError.innerHTML = `<div style="text-align:center;padding:2rem;color:#888"><div>Failed to load image</div><div style="margin-top:0.5rem">Click "Download" to view this photo</div></div>`;
+                imageError.style.display = 'block';
+            };
+            image.src = `/album-photo/${encodeURIComponent(photo.album)}/${photo.rel_path}`;
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // ── End album functions ────────────────────────────────────
 
         async function loadStats() {
             try {
@@ -581,6 +968,14 @@
         }
 
         function browseAll() {
+            currentMode = 'main';
+            currentAlbum = null;
+            currentRelPath = '';
+            document.getElementById('albumList').style.display = 'none';
+            document.getElementById('albumBreadcrumb').style.display = 'none';
+            document.getElementById('photoGrid').style.display = 'grid';
+            const deleteBtn = document.querySelector('.btn-delete');
+            if (deleteBtn) deleteBtn.style.display = '';
             document.getElementById('searchInput').value = '';
             currentQuery = '';
             currentPage = 0;
@@ -594,7 +989,11 @@
         function navigateModal(direction) {
             const newIndex = currentPhotoIndex + direction;
             if (newIndex >= 0 && newIndex < currentPhotos.length) {
-                openModal(currentPhotos[newIndex], newIndex);
+                if (currentMode === 'album') {
+                    openAlbumModal(currentPhotos[newIndex], newIndex);
+                } else {
+                    openModal(currentPhotos[newIndex], newIndex);
+                }
             }
         }
 
@@ -635,7 +1034,11 @@
 
             title.textContent = photo.filename;
             description.textContent = photo.description || '';
-            
+
+            // Restore delete button (may have been hidden in album mode)
+            const deleteBtn = document.querySelector('.btn-delete');
+            if (deleteBtn) deleteBtn.style.display = '';
+
             // Update navigation buttons
             updateModalNavButtons();
             
@@ -668,10 +1071,17 @@
             const modal = document.getElementById('modal');
             modal.classList.remove('active');
             document.body.style.overflow = '';
+            // Restore delete button visibility when returning to main
+            if (currentMode !== 'album') {
+                const deleteBtn = document.querySelector('.btn-delete');
+                if (deleteBtn) deleteBtn.style.display = '';
+            }
         }
 
         function downloadPhoto() {
-            if (currentFilename) {
+            if (currentMode === 'album' && currentAlbum && currentRelPath) {
+                window.location.href = `/album-download/${encodeURIComponent(currentAlbum.name)}/${currentRelPath}`;
+            } else if (currentFilename) {
                 window.location.href = `/download/${encodeURIComponent(currentFilename)}`;
             }
         }
@@ -711,14 +1121,16 @@
         function prevPage() {
             if (currentPage > 0) {
                 currentPage--;
-                loadPhotos();
+                if (currentMode === 'album') loadAlbumPhotos(); else loadPhotos();
+                window.scrollTo(0, 0);
             }
         }
 
         function nextPage() {
             if ((currentPage + 1) * pageSize < totalPhotos) {
                 currentPage++;
-                loadPhotos();
+                if (currentMode === 'album') loadAlbumPhotos(); else loadPhotos();
+                window.scrollTo(0, 0);
             }
         }
 

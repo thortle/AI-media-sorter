@@ -4,7 +4,9 @@ Generate thumbnails for all photos in the source directory.
 Run this script before starting the photo server.
 """
 
+import argparse
 import os
+import sys
 from pathlib import Path
 
 from PIL import Image
@@ -21,8 +23,11 @@ except ImportError:
     print("Install with: pip install pillow-heif")
 
 # Configuration
-PHOTO_DIR = "/Volumes/T7_SSD/G-photos"
-THUMBNAIL_DIR = "./thumbnails"
+# PHOTO_DIR is read from the PHOTO_DIR environment variable or --photos CLI argument.
+# Set it in your .env file or pass it on the command line.
+_photo_dir_env = os.getenv("PHOTO_DIR")
+PHOTO_DIR = _photo_dir_env  # resolved below in __main__ if a CLI arg is given
+THUMBNAIL_DIR = os.getenv("THUMBNAIL_DIR", "./thumbnails")
 THUMBNAIL_SIZE = (400, 400)
 SUPPORTED_FORMATS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
 if HEIC_SUPPORT:
@@ -37,7 +42,7 @@ def generate_thumbnails():
     photo_path = Path(PHOTO_DIR)
     if not photo_path.exists():
         print(f"Error: Photo directory not found: {PHOTO_DIR}")
-        print("Make sure the Samsung T7 SSD is connected and mounted.")
+        print("Make sure the path is correct and accessible.")
         return
     
     # Find all photos (skip macOS metadata files)
@@ -62,8 +67,10 @@ def generate_thumbnails():
     
     for photo_path in tqdm(photos, desc="Generating thumbnails"):
         try:
-            # Thumbnail filename (always .jpg)
-            thumb_name = photo_path.stem + ".jpg"
+            # Thumbnail filename: stem_EXT.jpg (e.g. IMG_0216_HEIC.jpg)
+            # Using the full extension avoids collisions when two files share
+            # the same stem (e.g. IMG_0216.HEIC and IMG_0216.PNG).
+            thumb_name = photo_path.stem + "_" + photo_path.suffix.lstrip(".") + ".jpg"
             thumb_path = Path(THUMBNAIL_DIR) / thumb_name
             
             # Skip if already exists
@@ -105,4 +112,21 @@ def generate_thumbnails():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generate thumbnails for all photos.")
+    parser.add_argument("--photos", default=None,
+                        help="Path to photo directory (overrides PHOTO_DIR env var)")
+    parser.add_argument("--thumbnails", default=None,
+                        help="Path to thumbnail output directory (overrides THUMBNAIL_DIR env var)")
+    args = parser.parse_args()
+
+    if args.photos:
+        PHOTO_DIR = args.photos
+    if args.thumbnails:
+        THUMBNAIL_DIR = args.thumbnails
+
+    if not PHOTO_DIR:
+        print("Error: Photo directory not set.")
+        print("Set the PHOTO_DIR environment variable or use --photos /path/to/photos")
+        sys.exit(1)
+
     generate_thumbnails()

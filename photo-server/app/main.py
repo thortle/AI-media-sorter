@@ -31,6 +31,9 @@ PHOTO_BASE_PATH = Path(os.getenv("PHOTO_BASE_PATH", "/photos"))
 THUMBNAIL_PATH = Path(os.getenv("THUMBNAIL_PATH", "/app/thumbnails"))
 DATA_PATH = os.getenv("DATA_PATH", "/app/data")
 TRASH_PATH = PHOTO_BASE_PATH / "_trash"
+ALBUM_THUMBNAIL_PATH = THUMBNAIL_PATH / "albums"
+
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp", ".gif"}
 
 # Authentication credentials (set via environment variables)
 AUTH_USERNAME = os.getenv("AUTH_USERNAME", "admin")
@@ -63,6 +66,26 @@ def sanitize_filename(filename: str) -> str:
     if safe_name != filename:
         raise HTTPException(status_code=400, detail="Invalid filename")
     return filename
+
+
+def sanitize_album_path(album_name: str) -> Path:
+    """Validate album name and return its absolute path inside PHOTO_BASE_PATH."""
+    if ".." in album_name:
+        raise HTTPException(status_code=400, detail="Invalid album name")
+    album_path = (PHOTO_BASE_PATH / album_name).resolve()
+    if not str(album_path).startswith(str(PHOTO_BASE_PATH.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid album name")
+    return album_path
+
+
+def sanitize_rel_path(album_path: Path, rel_path: str) -> Path:
+    """Validate a relative path within an album directory."""
+    if ".." in rel_path:
+        raise HTTPException(status_code=400, detail="Invalid path")
+    full_path = (album_path / rel_path).resolve()
+    if not str(full_path).startswith(str(album_path.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid path")
+    return full_path
 
 
 @asynccontextmanager
@@ -164,8 +187,9 @@ async def get_photo_info(filename: str, username: str = Depends(verify_credentia
 async def get_thumbnail(filename: str, username: str = Depends(verify_credentials)):
     """Serve a thumbnail image."""
     filename = sanitize_filename(filename)
-    # Thumbnails are stored as .jpg regardless of original format
-    thumb_name = Path(filename).stem + ".jpg"
+    # Thumbnails named as stem_EXT.jpg (e.g. IMG_0216_HEIC.jpg) to avoid
+    # collisions when two files share the same stem (IMG_0216.HEIC vs IMG_0216.PNG)
+    thumb_name = Path(filename).stem + "_" + Path(filename).suffix.lstrip(".") + ".jpg"
     thumb_path = THUMBNAIL_PATH / thumb_name
     
     if not thumb_path.exists():
@@ -261,6 +285,155 @@ async def get_stats(username: str = Depends(verify_credentials)):
     }
 
 
+# ── Album endpoints ──────────────────────────────────────────────────────────
+
+@app.get("/api/albums")
+async def list_albums(username: str = Depends(verify_credentials)):
+    """
+    List all photo albums (subdirectories of PHOTO_BASE_PATH that contain images).
+    Directories starting with '_', '.' or '._' are excluded.
+    """
+    albums = []
+    try:
+        for item in sorted(PHOTO_BASE_PATH.iterdir()):
+            if item.name.startswith("_") or item.name.startswith("."):
+                continue
+            try:
+                if not item.is_dir():
+                    continue
+                count = sum(
+                    1 for f in item.rglob("*")
+                    if not f.name.startswith(".") and f.suffix.lower() in IMAGE_EXTENSIONS
+                )
+                if count > 0:
+                    albums.append({"name": item.name, "photo_count": count})
+            except (PermissionError, OSError):
+                continue
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"albums": albums}
+
+
+@app.get("/api/album/{album_name}/photos")
+async def list_album_photos(
+    album_name: str,
+    limit: int = Query(500, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    username: str = Depends(verify_credentials),
+):
+    """List photos inside an album with pagination, sorted by filename."""
+    album_path = sanitize_album_path(album_name)
+    if not album_path.is_dir():
+        raise HTTPException(status_code=404, detail="Album not found")
+
+    files = sorted(
+        [
+            f for f in album_path.rglob("*")
+            if not f.name.startswith(".") and f.suffix.lower() in IMAGE_EXTENSIONS
+        ],
+        key=lambda f: f.name,
+    )
+    total = len(files)
+    page_files = files[offset : offset + limit]
+
+    photos = [
+        {
+            "filename": f.name,
+            "album": album_name,
+            "rel_path": str(f.relative_to(album_path)),
+        }
+        for f in page_files
+    ]
+    return {"total": total, "offset": offset, "limit": limit, "count": len(photos), "photos": photos}
+
+
+@app.get("/album-thumbnail/{album_name}/{rel_path:path}")
+async def get_album_thumbnail(
+    album_name: str, rel_path: str, username: str = Depends(verify_credentials)
+):
+    """Serve a thumbnail for an album photo, generating and caching it on first request."""
+    album_path = sanitize_album_path(album_name)
+    file_path = sanitize_rel_path(album_path, rel_path)
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    # Build a flat cache key: replace path separators to avoid nested dirs
+    flat_stem = rel_path.replace("/", "_").replace("\\", "_")
+    thumb_dir = ALBUM_THUMBNAIL_PATH / album_name
+    thumb_dir.mkdir(parents=True, exist_ok=True)
+    thumb_path = thumb_dir / (Path(flat_stem).stem + ".jpg")
+
+    if not thumb_path.exists():
+        try:
+            img = Image.open(file_path)
+            if img.mode in ("RGBA", "P", "CMYK"):
+                img = img.convert("RGB")
+            img.thumbnail((400, 400))
+            img.save(thumb_path, format="JPEG", quality=85)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to generate thumbnail: {e}")
+
+    return FileResponse(
+        thumb_path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@app.get("/album-photo/{album_name}/{rel_path:path}")
+async def get_album_photo(
+    album_name: str, rel_path: str, username: str = Depends(verify_credentials)
+):
+    """Serve an album photo, converting HEIC to JPEG on-the-fly."""
+    album_path = sanitize_album_path(album_name)
+    file_path = sanitize_rel_path(album_path, rel_path)
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    ext = file_path.suffix.lower()
+    if ext in (".heic", ".heif"):
+        try:
+            img = Image.open(file_path)
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            buffer = io.BytesIO()
+            img.save(buffer, format="JPEG", quality=90)
+            buffer.seek(0)
+            return StreamingResponse(
+                buffer,
+                media_type="image/jpeg",
+                headers={"Cache-Control": "public, max-age=3600"},
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to convert image: {e}")
+
+    media_types = {
+        ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+        ".webp": "image/webp", ".gif": "image/gif",
+    }
+    return FileResponse(
+        file_path,
+        media_type=media_types.get(ext, "application/octet-stream"),
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@app.get("/album-download/{album_name}/{rel_path:path}")
+async def download_album_photo(
+    album_name: str, rel_path: str, username: str = Depends(verify_credentials)
+):
+    """Download an original album photo."""
+    album_path = sanitize_album_path(album_name)
+    file_path = sanitize_rel_path(album_path, rel_path)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Photo not found")
+    return FileResponse(file_path, filename=file_path.name, media_type="application/octet-stream")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+
 @app.delete("/api/photo/{filename}")
 async def delete_photo(filename: str, username: str = Depends(verify_credentials)):
     """
@@ -292,10 +465,10 @@ async def delete_photo(filename: str, username: str = Depends(verify_credentials
         shutil.move(str(photo_path), str(trash_photo_path))
         
         # Move thumbnail to trash (if exists)
-        thumb_name = Path(filename).stem + ".jpg"
+        thumb_name = Path(filename).stem + "_" + Path(filename).suffix.lstrip(".") + ".jpg"
         thumb_path = THUMBNAIL_PATH / thumb_name
         if thumb_path.exists():
-            trash_thumb_name = f"{Path(filename).stem}_{timestamp}.jpg"
+            trash_thumb_name = f"{Path(filename).stem}_{Path(filename).suffix.lstrip('.')}_{timestamp}.jpg"
             shutil.move(str(thumb_path), str(trash_thumbs / trash_thumb_name))
         
         # Remove from search engine (in-memory)

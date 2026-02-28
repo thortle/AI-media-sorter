@@ -13,14 +13,14 @@ A self-hosted photo library with semantic search powered by AI-generated descrip
 - **CLIP tag corrections** applied (2,380 fixes for has_cars/has_dogs/has_characters)
 - **Browse All** feature with pagination (500 photos per page)
 - **Filter options** for People, Dogs, and Cars
-- **Tailscale remote access** configured
+- **Remote access** support via Tailscale or VPN
 
 ## Access URLs
 
 | Location | URL |
 |----------|-----|
 | Local | http://localhost:8000 |
-| Tailscale (Mac) | http://100.74.155.87:8000 |
+| Remote (Tailscale) | http://YOUR_TAILSCALE_IP:8000 |
 
 ## Quick Start
 
@@ -38,8 +38,8 @@ docker compose build && docker compose up -d
 # View logs
 docker compose logs -f
 
-# Check SSD mounted
-ls /Volumes/T7_SSD/G-photos
+# Check photo directory is accessible
+ls /path/to/your/photos
 ```
 
 ## Architecture
@@ -129,11 +129,11 @@ Edit `QUERY_EXPANSIONS` dict in `photo-server/app/search.py` when searches retur
 
 | Data | Path |
 |------|------|
-| Photos | `/Volumes/T7_SSD/G-photos/` |
+| Photos | `/path/to/your/photos/` |
 | Thumbnails | `photo-server/thumbnails/` |
 | Descriptions | `data/descriptions.json` |
 | Embeddings | `data/embeddings.npy` |
-| Trash | `/Volumes/T7_SSD/G-photos/_trash/` |
+| Trash | `/path/to/your/photos/_trash/` |
 
 ## Tech Stack
 
