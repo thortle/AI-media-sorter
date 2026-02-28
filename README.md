@@ -1,16 +1,17 @@
 # Local AI Photo Library
 
+> This project is the result of a personal problem I was confronted with. I found myself with a photo library of thousands of images stripped of all metadata — no dates, no tags, nothing to sort by. Every cloud solution meant giving up my data. So I built this instead: a fully local photo library where you can search it all with plain language from your own machine.
+
 A self-hosted photo library with semantic search powered by AI-generated descriptions.
 
 ## Current Status
 
-- **8,313 photos** indexed with AI descriptions (Moondream2 VLM)
+- More than **8,000 photos** indexed with AI descriptions (Moondream2 VLM)
 - **Semantic search** using `all-MiniLM-L12-v2` embeddings (384 dimensions)
 - **Hybrid search** with 25% minimum threshold and 500 max results
 - **Query expansion** for compound concepts ("family dinner", "sad people")
 - **Keyword boosting** (+15% per match, max 30%)
 - **FastAPI server** in Docker with HEIC support
-- **CLIP tag corrections** applied (2,380 fixes for has_cars/has_dogs/has_characters)
 - **Browse All** feature with pagination (500 photos per page)
 - **Filter options** for People, Dogs, and Cars
 - **Remote access** support via Tailscale or VPN
