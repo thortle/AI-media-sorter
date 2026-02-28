@@ -1,6 +1,7 @@
-# Local AI Photo Library
 
 > This project is the result of a personal problem I was confronted with. I found myself with a photo library of thousands of images stripped of all metadata — no dates, no tags, nothing to sort by. Every cloud solution meant giving up my data. So I built this instead: a fully local photo library where you can search it all with plain language from your own machine.
+
+# Local AI Photo Library
 
 A self-hosted photo library with semantic search powered by AI-generated descriptions.
 
