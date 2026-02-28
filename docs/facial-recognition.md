@@ -1,5 +1,7 @@
 # Facial Recognition Setup
 
+> **Work in Progress** — This feature is not yet functional. The scripts are scaffolded but have not been fully implemented or tested. Do not rely on this for actual use.
+
 Search for photos of yourself using the query **"me"**.
 
 ## Quick Start

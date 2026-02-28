@@ -54,22 +54,40 @@ Original Photo → VLM Description → Sentence Embeddings → Cosine Similarity
 
 ```
 media_sorter/
-├── photo-server/           # FastAPI Docker server
-│   ├── app/
-│   │   ├── main.py         # API endpoints
-│   │   ├── search.py       # Semantic search + query expansion
-│   │   └── search_logger.py
-│   ├── thumbnails/         # Generated thumbnails (400x400)
-│   └── docker-compose.yml
-├── data/
-│   ├── descriptions.json   # Photo metadata (8,313 entries)
-│   ├── embeddings.npy      # L12 embeddings (8313, 384)
-│   └── search_history.jsonl
+├── .env.example                    # Environment variable template
+├── requirements.txt                # Python dependencies for scripts
+├── photo-server/                   # FastAPI Docker server
+│   ├── Dockerfile
+│   ├── docker-compose.example.yml  # Copy to docker-compose.yml and configure
+│   ├── generate_thumbnails.py      # Pre-generate thumbnails before first run
+│   ├── thumbnails/                 # Generated thumbnails (gitignored)
+│   └── app/
+│       ├── main.py                 # API endpoints
+│       ├── search.py               # Semantic search + query expansion
+│       ├── search_logger.py
+│       ├── requirements.txt
+│       └── templates/
+│           └── index.html          # Web UI
+├── data/                           # Gitignored - generated locally
+│   ├── descriptions.json           # Photo metadata
+│   ├── embeddings.npy              # Sentence embeddings
+│   └── search_history.jsonl        # Search logs
 ├── scripts/
-│   ├── generate/           # VLM description generation
-│   ├── embeddings/         # Embedding creation
-│   └── facial_recognition/ # Face recognition (optional)
-└── docs/                   # Additional documentation
+│   ├── generate/                   # VLM description generation
+│   │   ├── main.py
+│   │   ├── complete_descriptions.py
+│   │   ├── models/
+│   │   └── utils/
+│   ├── embeddings/                 # Embedding creation
+│   │   ├── create_embeddings.py
+│   │   └── semantic_search.py
+│   ├── search/                     # Search utilities
+│   │   ├── json_converter.py
+│   │   ├── process_keywords.py
+│   │   └── search_photos.py
+    └── facial_recognition/         # Face recognition (not yet functional - WIP)
+└── docs/
+    └── facial-recognition.md       # WIP - see notice inside
 ```
 
 ## Search Features
