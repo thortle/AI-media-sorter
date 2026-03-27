@@ -13,7 +13,8 @@ RUN adduser --disabled-password --gecos "" appuser
 
 # Install Python dependencies
 COPY --chown=appuser:appuser app/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
 
 # Copy application code
 COPY --chown=appuser:appuser app/ .

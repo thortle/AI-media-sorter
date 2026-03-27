@@ -7,11 +7,22 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Tuple
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from search_logger import SearchLogger
+
+# Load spaCy for noun phrase extraction
+try:
+    import spacy
+    nlp = spacy.load("en_core_web_sm", disable=["ner", "lemmatizer", "textcat"])
+    SPACY_AVAILABLE = True
+    print("spaCy model loaded successfully")
+except Exception as e:
+    nlp = None
+    SPACY_AVAILABLE = False
+    print(f"spaCy not available, using fallback: {e}")
 
 
 # Query expansion rules - transforms simple queries into richer semantic descriptions
@@ -77,6 +88,95 @@ def expand_query(query: str) -> str:
     
     # No expansion found, return original
     return query
+
+
+def extract_noun_phrases(query: str) -> List[Tuple[str, int]]:
+    """
+    Extract noun phrases from a query using spaCy.
+
+    Returns list of (phrase, token_count) tuples sorted by length (longest first).
+    Falls back to simple word splitting if spaCy unavailable.
+
+    For search queries like "vibrant orange hair bathroom", this splits at noun
+    boundaries when adjectives precede, giving ["vibrant orange hair", "bathroom"].
+    But "family dinner" (NOUN NOUN without adj) stays together.
+    """
+    if not SPACY_AVAILABLE or nlp is None:
+        # Fallback: treat entire query as one phrase
+        words = query.strip().split()
+        return [(query.strip(), len(words))]
+
+    doc = nlp(query)
+    phrases = []
+
+    for chunk in doc.noun_chunks:
+        tokens = list(chunk)
+        current_phrase = []
+        has_adjective_before_noun = False
+
+        for i, tok in enumerate(tokens):
+            # Track if we've seen an adjective before nouns
+            if tok.pos_ == "ADJ":
+                has_adjective_before_noun = True
+
+            current_phrase.append(tok.text)
+
+            # Split at NOUN-NOUN boundary only if adjectives preceded
+            # This keeps "family dinner" together but splits "orange hair bathroom"
+            if (tok.pos_ == "NOUN" and
+                i + 1 < len(tokens) and
+                tokens[i + 1].pos_ == "NOUN" and
+                has_adjective_before_noun):
+                phrase_text = " ".join(current_phrase)
+                if phrase_text.strip():
+                    phrases.append((phrase_text.strip(), len(current_phrase)))
+                current_phrase = []
+                has_adjective_before_noun = False
+
+        # Add remaining tokens as a phrase
+        if current_phrase:
+            phrase_text = " ".join(current_phrase)
+            if phrase_text.strip():
+                phrases.append((phrase_text.strip(), len(current_phrase)))
+
+    # If no noun phrases found, use the full query
+    if not phrases:
+        words = query.strip().split()
+        return [(query.strip(), len(words))]
+
+    # Sort by token count descending (longer phrases first)
+    phrases.sort(key=lambda x: x[1], reverse=True)
+    return phrases
+
+
+def calculate_phrase_weights(phrases: List[Tuple[str, int]]) -> List[Tuple[str, float]]:
+    """
+    Calculate weights for phrases based on their length/specificity.
+
+    Longer phrases (compound descriptors) get higher weights.
+    Returns list of (phrase, normalized_weight) tuples.
+    """
+    if not phrases:
+        return []
+
+    # Assign raw weights based on token count
+    # 3+ tokens = 0.6, 2 tokens = 0.3, 1 token = 0.2
+    weighted = []
+    for phrase, token_count in phrases:
+        if token_count >= 3:
+            weight = 0.6
+        elif token_count == 2:
+            weight = 0.3
+        else:
+            weight = 0.2
+        weighted.append((phrase, weight))
+
+    # Normalize weights to sum to 1.0
+    total_weight = sum(w for _, w in weighted)
+    if total_weight > 0:
+        weighted = [(phrase, weight / total_weight) for phrase, weight in weighted]
+
+    return weighted
 
 
 def extract_phrases(query: str) -> tuple[list[str], list[str]]:
@@ -159,16 +259,28 @@ class PhotoSearchEngine:
         """
         if self.model is None or self.embeddings is None:
             raise RuntimeError("Search engine not loaded. Call load() first.")
-        
-        # Expand query for better semantic matching
-        expanded_query = expand_query(query)
-        
-        # Encode expanded query
-        query_embedding = self.model.encode(expanded_query, normalize_embeddings=True)
-        
-        # Calculate cosine similarity (embeddings are already normalized)
-        semantic_scores = np.dot(self.embeddings, query_embedding)
-        
+
+        # Extract noun phrases and calculate weights
+        raw_phrases = extract_noun_phrases(query)
+        weighted_phrases = calculate_phrase_weights(raw_phrases)
+
+        # Build expanded query string for logging
+        phrase_names = [p for p, _ in weighted_phrases]
+        expanded_query = f"Multi-phrase: {phrase_names}"
+
+        # Calculate weighted semantic scores across all phrases
+        semantic_scores = np.zeros(len(self.embeddings))
+
+        for phrase, weight in weighted_phrases:
+            # Apply query expansion to each phrase
+            expanded_phrase = expand_query(phrase)
+            # Encode phrase
+            phrase_embedding = self.model.encode(expanded_phrase, normalize_embeddings=True)
+            # Calculate similarity for this phrase
+            phrase_scores = np.dot(self.embeddings, phrase_embedding)
+            # Add weighted contribution
+            semantic_scores += weight * phrase_scores
+
         # Extract words for tie-breaking
         _, individual_words = extract_phrases(query)
         full_query_lower = query.lower().strip()
