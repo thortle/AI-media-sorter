@@ -610,9 +610,11 @@ async def upload_photo(
 
     photo_path = PHOTO_BASE_PATH / safe_name
 
-    # Save the file
+    # Save the file and ensure it's flushed to disk before calling external services
     with open(photo_path, "wb") as f:
         f.write(content)
+        f.flush()
+        os.fsync(f.fileno())
 
     try:
         # Generate thumbnail
