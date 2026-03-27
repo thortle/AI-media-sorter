@@ -178,9 +178,17 @@ Edit `QUERY_EXPANSIONS` dict in `photo-server/app/search.py` when searches retur
 - **Container**: Docker
 - **Remote Access**: Tailscale
 
-## Security Note
+## Security
 
-Current setup has basic authentication. For production use on untrusted networks, consider:
-- Rate limiting
-- Input validation for filenames
-- Audit logging for deletions
+**Security updates:** Critical CVEs patched in dependencies (python-multipart, FastAPI, Pillow). Stored XSS vulnerabilities fixed. Upload filenames sanitized. See [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for details.
+
+**Before first run:**
+1. Copy `.env.example` to `.env` and update with your credentials and paths
+2. Change `AUTH_USERNAME` and `AUTH_PASSWORD` from defaults
+3. Set `HOST_PHOTO_DIR` to your photo directory (same as `PHOTO_DIR`)
+4. On Linux, ensure proper permissions: `sudo chown -R 1000:1000 /path/to/your/photos`
+
+**Notes:**
+- Container runs as non-root user (UID 1000) for extra security
+- Basic authentication over HTTP only — use Tailscale/VPN for remote access
+- For sensitive deployments, review [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for complete audit findings

@@ -5,8 +5,8 @@ WORKDIR /app
 # Install system dependencies for HEIC support
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libheif-dev \
-    libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libffi-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user before copying files so ownership is set correctly
 RUN adduser --disabled-password --gecos "" appuser
