@@ -26,23 +26,50 @@ A self-hosted photo library with semantic search powered by AI-generated descrip
 
 ## Quick Start
 
+### First-Time Setup (Persistent Services)
+
 ```bash
-# Start the server
-cd photo-server
+# 1. Set up Moondream service (runs persistently, even when Mac sleeps)
+cd services
+./setup_persistent.sh
+
+# 2. Start Docker container
+cd ../photo-server
 docker compose up -d
 
-# Stop server
-docker compose down
-
-# Rebuild after changes
-docker compose build && docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Check photo directory is accessible
-ls /path/to/your/photos
+# 3. Verify everything is running
+cd ../services && ./manage_service.sh status
+docker ps
 ```
+
+Both services will now:
+- Keep running when your Mac sleeps or locks
+- Restart automatically if they crash
+- Start automatically on login/reboot
+
+### Daily Usage
+
+Services are already running! Just access: http://localhost:8000
+
+### Managing Services
+
+```bash
+# Moondream service
+cd services
+./manage_service.sh status    # Check status
+./manage_service.sh logs       # View logs
+./manage_service.sh restart    # Restart
+./manage_service.sh stop       # Stop service
+
+# Docker container
+cd photo-server
+docker compose logs -f         # View logs
+docker compose restart         # Restart
+docker compose down            # Stop (won't auto-restart)
+docker compose up -d           # Start
+```
+
+**Note:** Moondream logs are saved to `services/moondream.log` and `services/moondream.error.log`. Docker Desktop must be set to start on login for the container to auto-start.
 
 ## Architecture
 
@@ -115,12 +142,7 @@ Exact phrase matches get a boost (+15% per match, max 30%) to prioritize direct 
 Click the Browse All button to paginate through all photos (500 per page) with Next/Previous navigation.
 
 ### Upload Photos
-Upload photos from any device via the web UI. Photos are automatically processed with AI descriptions and become immediately searchable. Requires Moondream service running on host:
-
-```bash
-# Start Moondream service (run once before uploading)
-python services/moondream_service.py
-```
+Upload photos from any device via the web UI. Photos are automatically processed with AI descriptions and become immediately searchable. The Moondream service is configured to run persistently via the setup instructions above.
 
 ### Recent Uploads
 Click the Recent button to view recently uploaded photos, sorted by upload date.
