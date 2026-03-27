@@ -5,15 +5,21 @@ WORKDIR /app
 # Install system dependencies for HEIC support
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libheif-dev \
-    libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libffi-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user before copying files so ownership is set correctly
+RUN adduser --disabled-password --gecos "" appuser
 
 # Install Python dependencies
-COPY app/requirements.txt .
+COPY --chown=appuser:appuser app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY app/ .
+COPY --chown=appuser:appuser app/ .
+
+# Switch to non-root user
+USER appuser
 
 # Expose port
 EXPOSE 8000

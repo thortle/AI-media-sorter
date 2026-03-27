@@ -769,6 +769,14 @@
         // Auth
         let authHeader = sessionStorage.getItem('photoServerAuth') || null;
 
+        // Escape HTML special characters to prevent XSS when inserting
+        // server-supplied strings (filenames, album names) into innerHTML.
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(String(str)));
+            return div.innerHTML;
+        }
+
         function getHeaders() {
             return authHeader ? { 'Authorization': authHeader } : {};
         }
@@ -900,7 +908,7 @@
                     card.onclick = () => openAlbum(album);
                     card.innerHTML = `
                         <div class="album-icon">🖼️</div>
-                        <div class="album-name">${album.name}</div>
+                        <div class="album-name">${escapeHtml(album.name)}</div>
                         <div class="album-count">${album.photo_count.toLocaleString()} photos</div>
                     `;
                     albumList.appendChild(card);
@@ -979,11 +987,11 @@
             const thumbUrl = `/album-thumbnail/${encodeURIComponent(photo.album)}/${photo.rel_path}`;
             card.innerHTML = `
                 <img src="${thumbUrl}"
-                     alt="${photo.filename}"
+                     alt="${escapeHtml(photo.filename)}"
                      loading="lazy"
                      onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 fill=%22%23666%22 text-anchor=%22middle%22 dy=%22.3em%22>No thumb</text></svg>'">
                 <div class="info">
-                    <div class="filename">${photo.filename}</div>
+                    <div class="filename">${escapeHtml(photo.filename)}</div>
                 </div>
             `;
             return card;
@@ -1115,13 +1123,13 @@
 
             card.innerHTML = `
                 <img src="/thumbnail/${encodeURIComponent(photo.filename)}" 
-                     alt="${photo.filename}"
+                     alt="${escapeHtml(photo.filename)}"
                      loading="lazy"
                      onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 fill=%22%23666%22 text-anchor=%22middle%22 dy=%22.3em%22>No thumb</text></svg>'">
                 <div class="info">
-                    <div class="filename">${photo.filename}</div>
+                    <div class="filename">${escapeHtml(photo.filename)}</div>
                     ${photo.similarity !== undefined ? `<div class="similarity">${(photo.similarity * 100).toFixed(1)}% match</div>` : ''}
-                    ${tags.length > 0 ? `<div class="tags">${tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+                    ${tags.length > 0 ? `<div class="tags">${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
                 </div>
             `;
 
@@ -1462,11 +1470,11 @@
                     const uploadDate = new Date(photo.uploaded_at).toLocaleDateString();
                     card.innerHTML = `
                         <img src="/thumbnail/${encodeURIComponent(photo.filename)}"
-                             alt="${photo.filename}"
+                             alt="${escapeHtml(photo.filename)}"
                              loading="lazy"
                              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 fill=%22%23666%22 text-anchor=%22middle%22 dy=%22.3em%22>No thumb</text></svg>'">
                         <div class="info">
-                            <div class="filename">${photo.filename}</div>
+                            <div class="filename">${escapeHtml(photo.filename)}</div>
                             <div class="similarity" style="color: #8e44ad;">Uploaded ${uploadDate}</div>
                         </div>
                     `;

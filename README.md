@@ -178,7 +178,7 @@ Edit `QUERY_EXPANSIONS` dict in `photo-server/app/search.py` when searches retur
 - **Container**: Docker
 - **Remote Access**: Tailscale
 
-## Security Note
+## Security
 
 Current setup has basic authentication. For production use on untrusted networks, consider:
 - Rate limiting

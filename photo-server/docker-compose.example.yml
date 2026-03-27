@@ -11,11 +11,18 @@ services:
       # Generated thumbnails - read-write for deletion
       - ./thumbnails:/app/thumbnails
       # Original photos - UPDATE THIS PATH to your photo directory
-      - /path/to/your/photos:/photos
+      # The container user (UID 1000 / appuser) needs read-write access here.
+      # On Linux: sudo chown -R 1000:1000 /path/to/your/photos
+      # On macOS with Docker Desktop: permissions are handled transparently.
+      - ${PHOTO_DIR}:/photos
     environment:
       - PHOTO_BASE_PATH=/photos
       - THUMBNAIL_PATH=/app/thumbnails
       - DATA_PATH=/app/data
-      # Authentication - CHANGE THESE!
-      - AUTH_USERNAME=your_username
-      - AUTH_PASSWORD=your_secure_password
+      # Host-side path to photos — used to translate container paths when
+      # calling the Moondream service for AI descriptions during uploads.
+      # Set this to the same value as PHOTO_DIR in your .env file.
+      - HOST_PHOTO_DIR=${PHOTO_DIR}
+      # Authentication — loaded from .env (cp .env.example .env and fill in)
+      - AUTH_USERNAME=${AUTH_USERNAME}
+      - AUTH_PASSWORD=${AUTH_PASSWORD}
