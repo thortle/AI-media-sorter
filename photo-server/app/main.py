@@ -41,11 +41,16 @@ TRASH_PATH = PHOTO_BASE_PATH / "_trash"
 ALBUM_THUMBNAIL_PATH = THUMBNAIL_PATH / "albums"
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
 MOONDREAM_HOST = os.getenv("MOONDREAM_HOST", "http://host.docker.internal:8001")
+# Host-side path to the photo directory, used to translate the container's
+# PHOTO_BASE_PATH when calling the Moondream service (which runs on the host).
+# Set this to the same value as PHOTO_DIR in your .env file.
+# Leave unset only if the Moondream service shares the container filesystem.
+HOST_PHOTO_DIR = os.getenv("HOST_PHOTO_DIR")
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp", ".gif"}
 
-# Maximum allowed upload size (20 MB)
-MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+# Maximum allowed upload size (50 MB – covers large HEIC files from modern phones)
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 # Authentication credentials (set via environment variables)
 AUTH_USERNAME = os.getenv("AUTH_USERNAME", "admin")
@@ -540,11 +545,25 @@ def generate_single_thumbnail(photo_path: Path, thumb_dir: Path) -> Path:
 
 
 async def get_ai_description(photo_path: Path) -> str:
-    """Get AI description from Moondream2 service running on host."""
+    """Get AI description from Moondream2 service running on host.
+
+    The Moondream service runs on the host machine, so paths inside the
+    container (/photos/…) must be translated to the equivalent host path.
+    Set HOST_PHOTO_DIR to your photo directory on the host (same value as
+    PHOTO_DIR in your .env) so this translation works correctly.
+    """
+    if HOST_PHOTO_DIR:
+        # Replace the container-internal PHOTO_BASE_PATH prefix with the
+        # host-side directory so the Moondream service can find the file.
+        rel = photo_path.relative_to(PHOTO_BASE_PATH)
+        host_path = str(Path(HOST_PHOTO_DIR) / rel)
+    else:
+        host_path = str(photo_path)
+
     async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(
             f"{MOONDREAM_HOST}/describe",
-            json={"photo_path": str(photo_path)},
+            json={"photo_path": host_path},
         )
 
         if response.status_code != 200:

@@ -151,10 +151,10 @@ if not album_path.is_relative_to(PHOTO_BASE_PATH.resolve()):
 **Description:** The entire upload file was read into memory (`await file.read()`) before any size check.
 An authenticated user could upload an arbitrarily large file, exhausting server RAM and disk space.
 
-**Fix applied:** Added a 20 MB cap enforced immediately after `file.read()`:
+**Fix applied:** Added a 50 MB cap (covers large HEIC files from modern phones) enforced immediately after `file.read()`:
 
 ```python
-MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 content = await file.read()
 if len(content) > MAX_UPLOAD_BYTES:
@@ -275,8 +275,20 @@ This both leaks details about the developer's filesystem layout and means the up
 would silently fail for any deployment that is not on the developer's exact machine (the Moondream service
 would receive the wrong path).
 
-**Fix applied:** Removed the hardcoded path translation. The container path is now passed directly to the
-Moondream service, which should be configured with a matching `PHOTO_DIR` that maps to the same location.
+**Fix applied:** Removed the hardcoded path translation. A new `HOST_PHOTO_DIR` environment variable now
+supplies the host-side directory. The container translates its internal path to the host path before
+calling the Moondream service:
+
+```python
+if HOST_PHOTO_DIR:
+    rel = photo_path.relative_to(PHOTO_BASE_PATH)
+    host_path = str(Path(HOST_PHOTO_DIR) / rel)
+else:
+    host_path = str(photo_path)
+```
+
+Set `HOST_PHOTO_DIR` in your `.env` to the same value as `PHOTO_DIR` (the host-side photo directory).
+This is pre-wired in `docker-compose.example.yml` as `HOST_PHOTO_DIR=${PHOTO_DIR}`.
 
 ---
 
