@@ -309,10 +309,10 @@ class PhotoSearchEngine:
     def remove_photo(self, filename: str) -> bool:
         """
         Remove a photo from the in-memory index.
-        
+
         Args:
             filename: The filename to remove
-            
+
         Returns:
             True if photo was found and removed, False otherwise
         """
@@ -322,19 +322,38 @@ class PhotoSearchEngine:
             if photo["filename"] == filename:
                 photo_idx = idx
                 break
-        
+
         if photo_idx is None:
             return False
-        
+
         # Remove from photos list
         self.photos.pop(photo_idx)
-        
+
         # Remove from embeddings array
         if self.embeddings is not None:
             self.embeddings = np.delete(self.embeddings, photo_idx, axis=0)
-        
+
         print(f"Removed photo from index: {filename} (now {len(self.photos)} photos)")
         return True
+
+    def add_photo(self, photo: dict, embedding: np.ndarray) -> None:
+        """
+        Add a photo to the in-memory index (hot reload).
+
+        Args:
+            photo: Photo dict with filename, description, etc.
+            embedding: Pre-computed embedding vector (384 dims for MiniLM-L12)
+        """
+        # Add to photos list
+        self.photos.append(photo)
+
+        # Add embedding to array
+        if self.embeddings is not None:
+            if len(embedding.shape) == 1:
+                embedding = embedding.reshape(1, -1)
+            self.embeddings = np.vstack([self.embeddings, embedding])
+
+        print(f"Added photo to index: {photo['filename']} (now {len(self.photos)} photos)")
 
 
 # Global search engine instance

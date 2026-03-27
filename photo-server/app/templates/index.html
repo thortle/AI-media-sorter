@@ -662,6 +662,8 @@
                 <button onclick="performSearch()">Search</button>
                 <button onclick="browseAll()" style="background: #0f3460;">Browse All</button>
                 <button onclick="showAlbums()" style="background: #0f3460;">Albums</button>
+                <button onclick="showUploadModal()" style="background: #27ae60;">Upload</button>
+                <button onclick="showRecentUploads()" style="background: #8e44ad;">Recent</button>
             </div>
             <div class="filters">
                 <label class="filter-item" id="filterCharacters">
@@ -721,6 +723,45 @@
             <div id="imageError" style="display: none;"></div>
             <img id="modalImage" src="" alt="">
             <p class="modal-description" id="modalDescription"></p>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content" style="max-width: 500px; background: #16213e; border-radius: 12px; padding: 2rem; text-align: center;">
+            <h2 style="color: #27ae60; margin-bottom: 1.5rem;">Upload Photo</h2>
+
+            <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+
+            <div id="uploadDropzone" onclick="document.getElementById('photoInput').click()"
+                 style="border: 2px dashed #0f3460; border-radius: 12px; padding: 3rem; cursor: pointer; margin-bottom: 1rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📷</div>
+                <div>Tap to select a photo</div>
+                <div style="color: #888; font-size: 0.9rem; margin-top: 0.5rem;">JPG, PNG, HEIC, WebP</div>
+            </div>
+
+            <div id="uploadPreview" style="display: none; margin-bottom: 1rem;">
+                <img id="previewImage" style="max-width: 100%; max-height: 250px; border-radius: 8px;">
+                <div id="previewFilename" style="margin-top: 0.5rem; color: #aaa; font-size: 0.9rem;"></div>
+            </div>
+
+            <div id="uploadProgress" style="display: none; margin-bottom: 1rem;">
+                <div style="background: #0f3460; border-radius: 8px; height: 8px; overflow: hidden;">
+                    <div id="progressBar" style="background: #27ae60; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <div id="uploadStatus" style="margin-top: 0.5rem; color: #aaa;"></div>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button id="uploadBtn" onclick="uploadPhoto()" disabled
+                        style="flex: 1; padding: 0.75rem; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                    Upload
+                </button>
+                <button onclick="closeUploadModal()"
+                        style="flex: 1; padding: 0.75rem; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                    Cancel
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1278,6 +1319,172 @@
         document.getElementById('modal').addEventListener('click', (e) => {
             if (e.target.id === 'modal' || e.target.classList.contains('modal-content')) {
                 closeModal();
+            }
+        });
+
+        // ── Upload functions ────────────────────────────────────────
+
+        let selectedFile = null;
+
+        function showUploadModal() {
+            document.getElementById('uploadModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            resetUploadModal();
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+            document.body.style.overflow = '';
+            resetUploadModal();
+        }
+
+        function resetUploadModal() {
+            selectedFile = null;
+            document.getElementById('photoInput').value = '';
+            document.getElementById('uploadDropzone').style.display = 'block';
+            document.getElementById('uploadPreview').style.display = 'none';
+            document.getElementById('uploadProgress').style.display = 'none';
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressBar').style.background = '#27ae60';
+            document.getElementById('uploadStatus').textContent = '';
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            selectedFile = file;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('previewImage').src = e.target.result;
+                document.getElementById('previewFilename').textContent = file.name;
+                document.getElementById('uploadDropzone').style.display = 'none';
+                document.getElementById('uploadPreview').style.display = 'block';
+                document.getElementById('uploadBtn').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadPhoto() {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('uploadProgress').style.display = 'block';
+            document.getElementById('progressBar').style.width = '20%';
+            document.getElementById('uploadStatus').textContent = 'Uploading...';
+
+            try {
+                document.getElementById('progressBar').style.width = '40%';
+                document.getElementById('uploadStatus').textContent = 'Generating embeddings...';
+
+                const response = await authFetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                document.getElementById('progressBar').style.width = '100%';
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('uploadStatus').textContent = 'Success! Photo uploaded and indexed.';
+                    document.getElementById('uploadStatus').style.color = '#27ae60';
+                    document.getElementById('uploadStatus').style.fontWeight = 'bold';
+
+                    setTimeout(() => {
+                        closeUploadModal();
+                        loadStats();
+                        // Always show recent uploads after successful upload
+                        showRecentUploads();
+                    }, 3000);
+                } else {
+                    const error = await response.json();
+                    document.getElementById('uploadStatus').textContent = 'Error: ' + (error.detail || 'Upload failed');
+                    document.getElementById('progressBar').style.background = '#c0392b';
+                    document.getElementById('uploadBtn').disabled = false;
+                }
+            } catch (e) {
+                document.getElementById('uploadStatus').textContent = 'Error: ' + e.message;
+                document.getElementById('progressBar').style.background = '#c0392b';
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+
+        // ── Recent uploads ────────────────────────────────────────
+
+        function showRecentUploads() {
+            currentMode = 'uploads';
+            document.getElementById('searchInput').value = '';
+            currentQuery = '';
+            document.getElementById('albumList').style.display = 'none';
+            document.getElementById('albumBreadcrumb').style.display = 'none';
+            document.getElementById('photoGrid').style.display = 'grid';
+            document.getElementById('pagination').style.display = 'none';
+            loadRecentUploads();
+        }
+
+        async function loadRecentUploads() {
+            const grid = document.getElementById('photoGrid');
+            const loading = document.getElementById('loading');
+            const emptyState = document.getElementById('emptyState');
+
+            grid.innerHTML = '';
+            loading.style.display = 'block';
+            emptyState.style.display = 'none';
+
+            try {
+                const response = await authFetch('/api/uploads?limit=100');
+                const data = await response.json();
+                loading.style.display = 'none';
+
+                if (!data.uploads.length) {
+                    emptyState.querySelector('h2').textContent = 'No uploads yet';
+                    emptyState.querySelector('p').textContent = 'Use the Upload button to add photos';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                currentPhotos = data.uploads.map(u => ({
+                    filename: u.filename,
+                    description: u.description,
+                    uploaded_at: u.uploaded_at
+                }));
+
+                data.uploads.forEach((photo, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'photo-card';
+                    card.onclick = () => openModal(photo, index);
+
+                    const uploadDate = new Date(photo.uploaded_at).toLocaleDateString();
+                    card.innerHTML = `
+                        <img src="/thumbnail/${encodeURIComponent(photo.filename)}"
+                             alt="${photo.filename}"
+                             loading="lazy"
+                             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 fill=%22%23666%22 text-anchor=%22middle%22 dy=%22.3em%22>No thumb</text></svg>'">
+                        <div class="info">
+                            <div class="filename">${photo.filename}</div>
+                            <div class="similarity" style="color: #8e44ad;">Uploaded ${uploadDate}</div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                document.getElementById('stats').textContent = `${data.total} recently uploaded photos`;
+
+            } catch (e) {
+                loading.style.display = 'none';
+                console.error('Failed to load uploads:', e);
+            }
+        }
+
+        // Close upload modal on click outside
+        document.getElementById('uploadModal').addEventListener('click', (e) => {
+            if (e.target.id === 'uploadModal') {
+                closeUploadModal();
             }
         });
     </script>

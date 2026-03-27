@@ -114,6 +114,17 @@ Exact phrase matches get a boost (+15% per match, max 30%) to prioritize direct 
 ### Browse All
 Click the Browse All button to paginate through all photos (500 per page) with Next/Previous navigation.
 
+### Upload Photos
+Upload photos from any device via the web UI. Photos are automatically processed with AI descriptions and become immediately searchable. Requires Moondream service running on host:
+
+```bash
+# Start Moondream service (run once before uploading)
+python services/moondream_service.py
+```
+
+### Recent Uploads
+Click the Recent button to view recently uploaded photos, sorted by upload date.
+
 ### Filters
 Quick filters available for:
 - People (has_characters)
@@ -128,6 +139,8 @@ Quick filters available for:
 | `/api/search` | GET | Semantic search (`?q=query&limit=50`) |
 | `/api/photos` | GET | List photos (`?limit=100&offset=0`) |
 | `/api/stats` | GET | Photo statistics |
+| `/api/upload` | POST | Upload photo (multipart form) |
+| `/api/uploads` | GET | List recent uploads |
 | `/photo/{filename}` | GET | Serve photo (HEIC→JPEG conversion) |
 | `/thumbnail/{filename}` | GET | Serve thumbnail |
 | `/api/photo/{filename}` | DELETE | Move photo to trash |

@@ -2,6 +2,7 @@
 Photo Server - FastAPI application for semantic photo search.
 """
 
+import base64
 import io
 import json
 import os
@@ -12,13 +13,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query, Depends
+import httpx
+import numpy as np
+from fastapi import FastAPI, HTTPException, Query, Depends, UploadFile, File
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
-from PIL import Image
+from PIL import Image, ImageOps
 import pillow_heif
 
 # Register HEIF opener with Pillow
@@ -32,6 +35,8 @@ THUMBNAIL_PATH = Path(os.getenv("THUMBNAIL_PATH", "/app/thumbnails"))
 DATA_PATH = os.getenv("DATA_PATH", "/app/data")
 TRASH_PATH = PHOTO_BASE_PATH / "_trash"
 ALBUM_THUMBNAIL_PATH = THUMBNAIL_PATH / "albums"
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
+MOONDREAM_HOST = os.getenv("MOONDREAM_HOST", "http://host.docker.internal:8001")
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp", ".gif"}
 
@@ -494,3 +499,173 @@ async def delete_photo(filename: str, username: str = Depends(verify_credentials
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete photo: {str(e)}")
+
+
+# ── Upload endpoints ─────────────────────────────────────────────────────────
+
+def generate_single_thumbnail(photo_path: Path, thumb_dir: Path) -> Path:
+    """Generate thumbnail for a single photo."""
+    thumb_name = photo_path.stem + "_" + photo_path.suffix.lstrip(".").upper() + ".jpg"
+    thumb_path = thumb_dir / thumb_name
+
+    if thumb_path.exists():
+        return thumb_path
+
+    img = Image.open(photo_path)
+    try:
+        img = ImageOps.exif_transpose(img)
+    except Exception:
+        pass
+
+    if img.mode in ('RGBA', 'P', 'CMYK'):
+        img = img.convert('RGB')
+
+    img.thumbnail((400, 400), Image.Resampling.LANCZOS)
+    img.save(thumb_path, "JPEG", quality=85, optimize=True)
+    return thumb_path
+
+
+async def get_ai_description(photo_path: Path) -> str:
+    """Get AI description from Moondream2 service running on host."""
+    # Convert Docker path to host path
+    # Docker: /photos/filename.jpg -> Host: /Volumes/T7_SSD/G-photos/filename.jpg
+    host_path = str(photo_path).replace("/photos", "/Volumes/T7_SSD/G-photos")
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        response = await client.post(
+            f"{MOONDREAM_HOST}/describe",
+            json={"photo_path": host_path},
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Moondream error: {response.text}"
+            )
+
+        result = response.json()
+        return result.get("description", "").strip()
+
+
+@app.post("/api/upload")
+async def upload_photo(
+    file: UploadFile = File(...),
+    username: str = Depends(verify_credentials),
+):
+    """
+    Upload a photo and process it for semantic search.
+
+    1. Saves the file with timestamp prefix
+    2. Generates thumbnail
+    3. Gets AI description from Ollama llava
+    4. Creates embedding
+    5. Adds to search index
+    """
+    # Validate file type
+    ext = Path(file.filename).suffix.lower()
+    if ext not in IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
+
+    # Generate unique filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    original_name = Path(file.filename).stem.replace(" ", "_")
+    safe_name = f"upload_{timestamp}_{original_name}{ext}"
+
+    photo_path = PHOTO_BASE_PATH / safe_name
+
+    # Save the file
+    content = await file.read()
+    with open(photo_path, "wb") as f:
+        f.write(content)
+
+    try:
+        # Generate thumbnail
+        generate_single_thumbnail(photo_path, THUMBNAIL_PATH)
+
+        # Get AI description from Ollama
+        description = await get_ai_description(photo_path)
+
+        # Create embedding
+        embedding = search_engine.model.encode(description, normalize_embeddings=True)
+
+        # Create photo entry
+        new_photo = {
+            "filename": safe_name,
+            "description": description,
+            "full_path": str(photo_path),
+            "uploaded_at": datetime.now().isoformat(),
+            "keywords": {},
+            "metadata": {
+                "file_extension": ext,
+                "description_length": len(description),
+            }
+        }
+
+        # Update descriptions.json
+        descriptions_path = Path(DATA_PATH) / "descriptions.json"
+        with open(descriptions_path, "r") as f:
+            data = json.load(f)
+
+        data["photos"].append(new_photo)
+        data["metadata"]["total_photos"] = len(data["photos"])
+
+        with open(descriptions_path, "w") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+        # Update embeddings.npy
+        embeddings_path = Path(DATA_PATH) / "embeddings.npy"
+        existing_embeddings = np.load(embeddings_path)
+        new_embeddings = np.vstack([existing_embeddings, embedding.reshape(1, -1)])
+        np.save(embeddings_path, new_embeddings)
+
+        # Add to in-memory search index
+        search_engine.add_photo(new_photo, embedding)
+
+        return {
+            "status": "success",
+            "filename": safe_name,
+            "description": description[:200] + "..." if len(description) > 200 else description,
+            "message": "Photo uploaded and processed successfully",
+        }
+
+    except Exception as e:
+        # Log the full error for debugging
+        import traceback
+        print(f"Upload error for {safe_name}:")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        print(f"Traceback:")
+        traceback.print_exc()
+
+        # Clean up on failure
+        if photo_path.exists():
+            photo_path.unlink()
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
+
+@app.get("/api/uploads")
+async def list_recent_uploads(
+    limit: int = Query(50, ge=1, le=200),
+    username: str = Depends(verify_credentials),
+):
+    """
+    List recently uploaded photos (those with uploaded_at timestamp).
+    Sorted by upload time, newest first.
+    """
+    uploads = []
+    for photo in search_engine.photos:
+        if "uploaded_at" in photo:
+            uploads.append({
+                "filename": photo["filename"],
+                "description": photo.get("description", ""),
+                "uploaded_at": photo["uploaded_at"],
+            })
+
+    # Sort by upload time, newest first
+    uploads.sort(key=lambda x: x["uploaded_at"], reverse=True)
+
+    return {
+        "total": len(uploads),
+        "count": min(limit, len(uploads)),
+        "uploads": uploads[:limit],
+    }
