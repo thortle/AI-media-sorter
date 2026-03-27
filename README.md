@@ -184,3 +184,9 @@ Current setup has basic authentication. For production use on untrusted networks
 - Rate limiting
 - Input validation for filenames
 - Audit logging for deletions
+
+For a full hardening checklist (credential rotation, branch protection, secret scanning, Docker
+hardening, and a pre-publish audit) see [`SECURITY.md`](SECURITY.md).
+
+If you are working across branches or evaluating a security PR while you have local changes,
+see [`docs/safe-merge-workflow.md`](docs/safe-merge-workflow.md) for a step-by-step guide.
