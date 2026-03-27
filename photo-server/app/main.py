@@ -133,8 +133,8 @@ templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    """Serve the main web UI (auth handled client-side via login form)."""
+async def index(request: Request, username: str = Depends(verify_credentials)):
+    """Serve the main web UI with HTTP Basic Auth required."""
     return templates.TemplateResponse("index.html", {"request": request})
 
 

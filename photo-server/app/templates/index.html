@@ -585,75 +585,9 @@
                 font-size: 0.8rem;
             }
         }
-
-        /* Login overlay */
-        .login-overlay {
-            position: fixed;
-            inset: 0;
-            background: #1a1a2e;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-        .login-box {
-            background: #16213e;
-            padding: 2.5rem;
-            border-radius: 12px;
-            width: 320px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-        }
-        .login-box h2 {
-            color: #e94560;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            font-size: 1.4rem;
-        }
-        .login-box input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1rem;
-            border: none;
-            border-radius: 8px;
-            background: #0f3460;
-            color: #fff;
-            font-size: 1rem;
-            display: block;
-        }
-        .login-box input::placeholder { color: #888; }
-        .login-box .login-btn {
-            width: 100%;
-            padding: 0.75rem;
-            background: #e94560;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .login-box .login-btn:hover { background: #ff6b6b; }
-        .login-error {
-            color: #e94560;
-            font-size: 0.85rem;
-            margin-top: 0.75rem;
-            text-align: center;
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <!-- Login overlay -->
-    <div class="login-overlay" id="loginOverlay">
-        <div class="login-box">
-            <h2>Photo Server</h2>
-            <input type="text" id="loginUsername" placeholder="Username" autocomplete="username">
-            <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
-            <button class="login-btn" onclick="doLogin()">Sign In</button>
-            <p class="login-error" id="loginError">Invalid username or password</p>
-        </div>
-    </div>
-
     <header class="header">
         <h1>Photo Server</h1>
         <div class="search-container">
@@ -766,9 +700,6 @@
     </div>
 
     <script>
-        // Auth
-        let authHeader = sessionStorage.getItem('photoServerAuth') || null;
-
         // Escape HTML special characters to prevent XSS when inserting
         // server-supplied strings (filenames, album names) into innerHTML.
         function escapeHtml(str) {
@@ -777,51 +708,9 @@
             return div.innerHTML;
         }
 
-        function getHeaders() {
-            return authHeader ? { 'Authorization': authHeader } : {};
-        }
-
         async function authFetch(url, options = {}) {
-            const headers = { ...getHeaders(), ...(options.headers || {}) };
-            const response = await fetch(url, { ...options, headers, credentials: 'omit' });
-            if (response.status === 401) {
-                showLogin();
-                throw new Error('Authentication required — please sign in again');
-            }
+            const response = await fetch(url, { ...options, credentials: 'include' });
             return response;
-        }
-
-        async function doLogin() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            if (!username || !password) return;
-            const header = 'Basic ' + btoa(username + ':' + password);
-            try {
-                const response = await fetch('/api/stats', {
-                    headers: { 'Authorization': header },
-                    credentials: 'omit'
-                });
-                if (response.ok) {
-                    authHeader = header;
-                    sessionStorage.setItem('photoServerAuth', header);
-                    document.getElementById('loginOverlay').style.display = 'none';
-                    document.getElementById('loginError').style.display = 'none';
-                    loadStats();
-                    loadPhotos();
-                } else {
-                    document.getElementById('loginError').style.display = 'block';
-                }
-            } catch (e) {
-                document.getElementById('loginError').style.display = 'block';
-            }
-        }
-
-        function showLogin() {
-            authHeader = null;
-            sessionStorage.removeItem('photoServerAuth');
-            document.getElementById('loginOverlay').style.display = 'flex';
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
         }
 
         // State
@@ -844,19 +733,8 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            // Enter key for login form
-            document.getElementById('loginPassword').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') doLogin();
-            });
-            document.getElementById('loginUsername').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') doLogin();
-            });
-
-            if (authHeader) {
-                document.getElementById('loginOverlay').style.display = 'none';
-                loadStats();
-                loadPhotos();
-            }
+            loadStats();
+            loadPhotos();
 
             // Enter key to search
             document.getElementById('searchInput').addEventListener('keypress', (e) => {
