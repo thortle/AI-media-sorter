@@ -586,7 +586,7 @@ async def upload_photo(
 
     # Generate unique filename using only alphanumeric characters
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    original_stem = re.sub(r"[^a-zA-Z0-9_\-]", "_", Path(file.filename).stem)
+    original_stem = re.sub(r"[^a-zA-Z0-9_-]", "_", Path(file.filename).stem)
     safe_name = f"upload_{timestamp}_{original_stem}{ext}"
 
     photo_path = PHOTO_BASE_PATH / safe_name

@@ -212,10 +212,13 @@ Docker container itself, via `host.docker.internal`) could pass an arbitrary pat
 the file usefully, the existence of files outside the photo directory is revealed via the 404 vs. 500
 response difference, constituting an information-disclosure / path-traversal risk.
 
-**Fix applied:** Added a `PHOTO_DIR` environment variable and a `is_relative_to()` containment check:
+**Fix applied:** Added a `PHOTO_DIR` environment variable and a `is_relative_to()` containment check. `PHOTO_DIR` is now **required** — the service raises `RuntimeError` at startup if it is not set, preventing accidental access to the entire filesystem:
 
 ```python
-_ALLOWED_PHOTO_DIR = Path(os.getenv("PHOTO_DIR", str(Path.home()))).resolve()
+_photo_dir_env = os.getenv("PHOTO_DIR")
+if not _photo_dir_env:
+    raise RuntimeError("PHOTO_DIR environment variable is required …")
+_ALLOWED_PHOTO_DIR = Path(_photo_dir_env).resolve()
 
 path = Path(request.photo_path).resolve()
 if not path.is_relative_to(_ALLOWED_PHOTO_DIR):

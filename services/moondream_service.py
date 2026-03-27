@@ -20,8 +20,15 @@ import uvicorn
 app = FastAPI(title="Moondream Service")
 
 # Directory that the service is allowed to read photos from.
-# Override with PHOTO_DIR env var; defaults to home directory as a safe fallback.
-_ALLOWED_PHOTO_DIR = Path(os.getenv("PHOTO_DIR", str(Path.home()))).resolve()
+# PHOTO_DIR must be set to your actual photo directory; the service will refuse
+# to start without it to prevent accidental access to the full filesystem.
+_photo_dir_env = os.getenv("PHOTO_DIR")
+if not _photo_dir_env:
+    raise RuntimeError(
+        "PHOTO_DIR environment variable is required. "
+        "Set it to the absolute path of your photo directory before starting this service."
+    )
+_ALLOWED_PHOTO_DIR = Path(_photo_dir_env).resolve()
 
 # Lazy load model (only when first request comes in)
 vision_model = None

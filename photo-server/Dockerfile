@@ -8,15 +8,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Create a non-root user before copying files so ownership is set correctly
+RUN adduser --disabled-password --gecos "" appuser
+
 # Install Python dependencies
-COPY app/requirements.txt .
+COPY --chown=appuser:appuser app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY app/ .
+COPY --chown=appuser:appuser app/ .
 
-# Create a non-root user and switch to it
-RUN adduser --disabled-password --gecos "" appuser
+# Switch to non-root user
 USER appuser
 
 # Expose port
