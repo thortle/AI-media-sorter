@@ -31,11 +31,12 @@ an associated fix have been patched in this PR.
 - `python-multipart==0.0.6` — Content-Type header ReDoS (≤ 0.0.6), multipart/form-data boundary DoS
   (< 0.0.18), and arbitrary file-write via non-default configuration (< 0.0.22).
 - `fastapi==0.109.0` — Inherits the python-multipart ReDoS when parsing Content-Type headers (≤ 0.109.0).
-- `pillow==10.2.0` — Buffer overflow in image parsing (< 10.3.0).
+- `pillow==10.2.0` — Buffer overflow in image parsing (< 10.3.0); out-of-bounds write when loading PSD
+  images (≥ 10.3.0, < 12.1.1).
 
 The upload endpoint (`POST /api/upload`) directly exposes these libraries to untrusted input.
 
-**Fix applied:** Upgraded to `python-multipart==0.0.22`, `fastapi==0.115.0`, `pillow==10.3.0`.
+**Fix applied:** Upgraded to `python-multipart==0.0.22`, `fastapi==0.115.0`, `pillow==12.1.1`.
 
 ---
 
