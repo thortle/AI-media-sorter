@@ -6,6 +6,7 @@ Run this on the host machine - Docker will call it for AI descriptions.
 Usage: python services/moondream_service.py
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -17,6 +18,10 @@ from pydantic import BaseModel
 import uvicorn
 
 app = FastAPI(title="Moondream Service")
+
+# Directory that the service is allowed to read photos from.
+# Override with PHOTO_DIR env var; defaults to home directory as a safe fallback.
+_ALLOWED_PHOTO_DIR = Path(os.getenv("PHOTO_DIR", str(Path.home()))).resolve()
 
 # Lazy load model (only when first request comes in)
 vision_model = None
@@ -39,7 +44,12 @@ class DescribeRequest(BaseModel):
 @app.post("/describe")
 async def describe_image(request: DescribeRequest):
     """Generate description for an image."""
-    path = Path(request.photo_path)
+    path = Path(request.photo_path).resolve()
+
+    # Ensure the requested path stays within the allowed directory
+    if not path.is_relative_to(_ALLOWED_PHOTO_DIR):
+        raise HTTPException(status_code=403, detail="Access to this path is not permitted")
+
     if not path.exists():
         raise HTTPException(status_code=404, detail="Photo not found")
 
@@ -59,5 +69,6 @@ async def health():
 
 if __name__ == "__main__":
     print("Starting Moondream service on port 8001...")
+    print(f"Allowed photo directory: {_ALLOWED_PHOTO_DIR}")
     print("Docker will call this for AI descriptions during uploads.")
     uvicorn.run(app, host="0.0.0.0", port=8001)

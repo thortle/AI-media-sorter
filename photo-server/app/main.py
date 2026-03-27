@@ -5,7 +5,9 @@ Photo Server - FastAPI application for semantic photo search.
 import base64
 import io
 import json
+import logging
 import os
+import re
 import secrets
 import shutil
 from contextlib import asynccontextmanager
@@ -29,6 +31,8 @@ pillow_heif.register_heif_opener()
 
 from search import search_engine
 
+log = logging.getLogger(__name__)
+
 # Configuration from environment
 PHOTO_BASE_PATH = Path(os.getenv("PHOTO_BASE_PATH", "/photos"))
 THUMBNAIL_PATH = Path(os.getenv("THUMBNAIL_PATH", "/app/thumbnails"))
@@ -40,9 +44,20 @@ MOONDREAM_HOST = os.getenv("MOONDREAM_HOST", "http://host.docker.internal:8001")
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp", ".gif"}
 
+# Maximum allowed upload size (20 MB)
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+
 # Authentication credentials (set via environment variables)
 AUTH_USERNAME = os.getenv("AUTH_USERNAME", "admin")
-AUTH_PASSWORD = os.getenv("AUTH_PASSWORD", "changeme")  # CHANGE THIS!
+AUTH_PASSWORD = os.getenv("AUTH_PASSWORD", "changeme")
+
+_DEFAULT_CREDENTIALS = {"admin", "changeme"}
+if AUTH_USERNAME in _DEFAULT_CREDENTIALS or AUTH_PASSWORD in _DEFAULT_CREDENTIALS:
+    log.warning(
+        "⚠  Default AUTH_USERNAME/AUTH_PASSWORD detected. "
+        "Set AUTH_USERNAME and AUTH_PASSWORD environment variables before "
+        "exposing this server to any network."
+    )
 
 # Security setup
 security = HTTPBasic()
@@ -78,7 +93,7 @@ def sanitize_album_path(album_name: str) -> Path:
     if ".." in album_name:
         raise HTTPException(status_code=400, detail="Invalid album name")
     album_path = (PHOTO_BASE_PATH / album_name).resolve()
-    if not str(album_path).startswith(str(PHOTO_BASE_PATH.resolve())):
+    if not album_path.is_relative_to(PHOTO_BASE_PATH.resolve()):
         raise HTTPException(status_code=400, detail="Invalid album name")
     return album_path
 
@@ -88,7 +103,7 @@ def sanitize_rel_path(album_path: Path, rel_path: str) -> Path:
     if ".." in rel_path:
         raise HTTPException(status_code=400, detail="Invalid path")
     full_path = (album_path / rel_path).resolve()
-    if not str(full_path).startswith(str(album_path.resolve())):
+    if not full_path.is_relative_to(album_path.resolve()):
         raise HTTPException(status_code=400, detail="Invalid path")
     return full_path
 
@@ -494,7 +509,6 @@ async def delete_photo(filename: str, username: str = Depends(verify_credentials
         return {
             "status": "success",
             "message": f"Photo moved to trash: {filename}",
-            "trash_path": str(trash_photo_path),
         }
         
     except Exception as e:
@@ -527,14 +541,10 @@ def generate_single_thumbnail(photo_path: Path, thumb_dir: Path) -> Path:
 
 async def get_ai_description(photo_path: Path) -> str:
     """Get AI description from Moondream2 service running on host."""
-    # Convert Docker path to host path
-    # Docker: /photos/filename.jpg -> Host: /Volumes/T7_SSD/G-photos/filename.jpg
-    host_path = str(photo_path).replace("/photos", "/Volumes/T7_SSD/G-photos")
-
     async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(
             f"{MOONDREAM_HOST}/describe",
-            json={"photo_path": host_path},
+            json={"photo_path": str(photo_path)},
         )
 
         if response.status_code != 200:
@@ -566,15 +576,22 @@ async def upload_photo(
     if ext not in IMAGE_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
 
-    # Generate unique filename
+    # Read file and enforce size limit before writing to disk
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum allowed size is {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.",
+        )
+
+    # Generate unique filename using only alphanumeric characters
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    original_name = Path(file.filename).stem.replace(" ", "_")
-    safe_name = f"upload_{timestamp}_{original_name}{ext}"
+    original_stem = re.sub(r"[^a-zA-Z0-9_\-]", "_", Path(file.filename).stem)
+    safe_name = f"upload_{timestamp}_{original_stem}{ext}"
 
     photo_path = PHOTO_BASE_PATH / safe_name
 
     # Save the file
-    content = await file.read()
     with open(photo_path, "wb") as f:
         f.write(content)
 
