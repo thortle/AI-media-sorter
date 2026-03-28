@@ -187,15 +187,146 @@ def extract_phrases(query: str) -> tuple[list[str], list[str]]:
     words = query.lower().split()
     full_phrases = []
     individual_words = []
-    
+
     # Add the full query as a phrase if multi-word
     if len(words) > 1:
         full_phrases.append(query.lower())
-    
+
     # Add individual words (3+ chars)
     individual_words = [w for w in words if len(w) >= 3]
-    
+
     return full_phrases, individual_words
+
+
+def extract_adjective_noun_pairs(text: str) -> list[tuple[str, str]]:
+    """
+    Extract (adjective, noun) pairs from text using spaCy dependency parsing.
+
+    Returns list of (adjective, noun) tuples where the adjective modifies the noun.
+    E.g., "vibrant pink hair" -> [("vibrant", "hair"), ("pink", "hair")]
+    E.g., "pink shirt and brown hair" -> [("pink", "shirt"), ("brown", "hair")]
+    """
+    if not SPACY_AVAILABLE or nlp is None:
+        return []
+
+    doc = nlp(text.lower())
+    pairs = []
+
+    for token in doc:
+        # Find adjectives that modify nouns (amod = adjectival modifier)
+        if token.dep_ == "amod" and token.head.pos_ == "NOUN":
+            pairs.append((token.text, token.head.text))
+
+    return pairs
+
+
+def check_adjective_noun_match(description: str, query_words: list[str]) -> bool:
+    """
+    Check if query words form a valid adjective-noun relationship in the description.
+
+    For "pink hair" query:
+    - "vibrant pink hair" -> True (pink modifies hair)
+    - "dark brown hair...pink shirt" -> False (pink modifies shirt, not hair)
+
+    For single-word queries, returns True (no relationship to check).
+    """
+    if len(query_words) < 2:
+        return True  # Single word, no relationship to check
+
+    # Extract adj-noun pairs from description
+    pairs = extract_adjective_noun_pairs(description)
+
+    if not pairs:
+        # No adjective-noun pairs found in description
+        # This means the description doesn't have the expected grammatical structure
+        # Don't give it a boost - return False to apply penalty
+        return False
+
+    # For a query like "pink car", check if any adjective matching "pink"
+    # modifies a noun matching "car"
+    for adj, noun in pairs:
+        # Check if adjective matches query word(s) and noun matches query noun
+        # Use exact or prefix matching to avoid false positives like "car" in "scarf"
+        adj_matches_query = any(
+            adj == qw or adj.startswith(qw)  # "pink" or "pink-ish"
+            for qw in query_words[:-1]  # All words except last (potential adjectives)
+        )
+        noun_matches_query = (
+            noun == query_words[-1] or noun.startswith(query_words[-1])  # "car" or "cars"
+        )
+
+        if adj_matches_query and noun_matches_query:
+            return True
+
+    # Also check reverse: maybe user typed "car pink" instead of "pink car"
+    for adj, noun in pairs:
+        adj_matches_query = any(
+            adj == qw or adj.startswith(qw)
+            for qw in query_words[1:]  # All words except first
+        )
+        noun_matches_query = (
+            noun == query_words[0] or noun.startswith(query_words[0])
+        )
+
+        if adj_matches_query and noun_matches_query:
+            return True
+
+    return False
+
+
+def check_word_proximity(description: str, words: list[str], max_distance: int = 3) -> bool:
+    """
+    Check if all query words appear within max_distance words of each other.
+
+    For "pink hair" query:
+    - "vibrant pink hair" -> True (adjacent)
+    - "dark brown hair...pink shirt" -> False (too far apart)
+    """
+    if len(words) <= 1:
+        return True
+
+    # Tokenize description into words
+    desc_words = description.lower().split()
+
+    # Find all positions of each query word
+    positions = {}
+    for word in words:
+        positions[word] = []
+        for i, desc_word in enumerate(desc_words):
+            # Check if query word is contained in description word
+            if word in desc_word:
+                positions[word].append(i)
+
+    # Check if any word is missing
+    for word in words:
+        if not positions[word]:
+            return False
+
+    # For two words, check if any pair is within max_distance
+    if len(words) == 2:
+        for pos1 in positions[words[0]]:
+            for pos2 in positions[words[1]]:
+                if abs(pos1 - pos2) <= max_distance:
+                    return True
+        return False
+
+    # For 3+ words, check if all can be found within a window of max_distance
+    # Use the first word as anchor and check if others are nearby
+    for anchor_pos in positions[words[0]]:
+        all_nearby = True
+        for other_word in words[1:]:
+            found_nearby = False
+            for other_pos in positions[other_word]:
+                if abs(anchor_pos - other_pos) <= max_distance:
+                    found_nearby = True
+                    break
+            if not found_nearby:
+                all_nearby = False
+                break
+        if all_nearby:
+            return True
+
+    return False
 
 
 class PhotoSearchEngine:
@@ -312,23 +443,36 @@ class PhotoSearchEngine:
             description_lower = photo["description"].lower()
             phrase_matched = False
             word_matches = 0
-            
+
             # Check for full phrase match
             if is_multi_word and full_query_lower in description_lower:
                 phrase_matched = True
-            
+
             # Count individual word matches
             for word in individual_words:
                 if word in description_lower:
                     word_matches += 1
-            
-            # Small tie-breaker boost (multiplicative, max 5%)
-            # This preserves semantic ranking but breaks ties
+
+            # Keyword boost/penalty logic with NLP adjective-noun matching
+            # - Full phrase match: 10% boost
+            # - All words match AND adjective modifies noun: 10% boost
+            # - All words match but adjective does NOT modify noun: 40% penalty
+            # - Partial match (some words missing): penalty proportional to missing words
+            # - No match: no adjustment
             if phrase_matched:
-                tie_breaker = 1.05  # 5% boost for exact phrase
-            elif word_matches > 0 and len(individual_words) > 0:
-                match_ratio = word_matches / len(individual_words)
-                tie_breaker = 1.0 + (0.03 * match_ratio)  # Up to 3% for partial
+                tie_breaker = 1.10  # 10% boost for exact phrase
+            elif word_matches == len(individual_words) and len(individual_words) > 0:
+                # All words present - check if adjective actually modifies the noun
+                if check_adjective_noun_match(description_lower, individual_words):
+                    tie_breaker = 1.10  # 10% boost if proper adj-noun relationship
+                else:
+                    tie_breaker = 0.60  # 40% penalty for misleading scattered matches
+            elif word_matches > 0 and len(individual_words) > 1:
+                # Partial match - penalize based on missing words
+                # E.g., "curly hair" query but only "hair" in description
+                # Strong penalty to ensure actual matches rank above partial matches
+                missing_ratio = 1 - (word_matches / len(individual_words))
+                tie_breaker = 1.0 - (0.50 * missing_ratio)  # Up to 50% penalty
             else:
                 tie_breaker = 1.0
             

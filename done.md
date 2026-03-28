@@ -1,11 +1,158 @@
 # AI Photo Library - Session Status
 
-**Date:** 2026-03-27
-**Status:** COMPLETE - Compound phrase search implemented and tested on experimental branch
+**Date:** 2026-03-28
+**Status:** Fixed NLP adjective-noun matching (substring bug) in semantic search ranking
 
 ---
 
-## Latest Activity (2026-03-27) - Compound Phrase Search
+## Latest Activity (2026-03-28) - Fixed Substring Matching Bug
+
+### Problem
+
+Query "pink car" returned photos where "pink" and "car" appeared separately:
+- IMG_7618.HEIC (#2) - "vibrant pink hair...pink scarf...standing next to a car" (pink matches scarf, not car)
+- IMG_7617.HEIC (#3) - "vibrant red hair...pink scarf...car" (pink matches scarf, not car)
+
+The adjective-noun check was incorrectly matching because `'car' in 'scarf'` returns True (substring match).
+
+### Root Cause
+
+The matching logic used bidirectional substring checking:
+```python
+adj_matches_query = any(qw in adj or adj in qw for qw in query_words[:-1])
+noun_matches_query = (query_words[-1] in noun or noun in query_words[-1])
+```
+
+For query "pink car" and description pair ('pink', 'scarf'):
+- "pink" == "pink" → True
+- "car" in "scarf" → True (substring!)
+- Result: False positive match
+
+### Solution
+
+Changed from bidirectional substring matching to exact/prefix matching:
+```python
+adj_matches_query = any(adj == qw or adj.startswith(qw) for qw in query_words[:-1])
+noun_matches_query = (noun == query_words[-1] or noun.startswith(query_words[-1]))
+```
+
+This allows:
+- "pink" == "pink" → Match
+- "car" == "car" or "car" == "cars" → Match
+
+But prevents:
+- "car" in "scarf" → No match
+
+Also increased penalty for scattered matches from 25% to 40% (0.75 → 0.60 multiplier).
+
+### Results
+
+**"pink car" query:**
+- #1: IMG_2989.HEIC - "vibrant pink BMW M2 sports car" (1.10x boost)
+- IMG_7618.HEIC, IMG_7617.HEIC, IMG_7620.HEIC dropped out of top 50 results
+- Photos with scattered keywords now get 40% penalty instead of 10% boost
+
+**Regression tests:**
+- "pink hair": All top 5 have actual "pink hair"
+- "curly hair": All top 5 have "curly" in descriptions
+- "orange hair woman": Results show actual orange/red hair on women
+- "orange hair bathroom": Compound phrase search still working correctly
+
+### Files Modified
+
+- `photo-server/app/search.py` - Fixed substring bug in adjective-noun matching, increased scatter penalty to 40%
+
+---
+
+## Previous Activity (2026-03-28) - Added NLP Adjective-Noun Matching
+
+### Problem
+
+Query "pink hair" returned photos where "pink" matched non-hair attributes:
+- IMG_2373.JPG (#2) - "dark brown hair...pink shirt" (pink matches shirt, not hair)
+- IMG_1632(1).HEIC (#10) - "blonde curly hair...light pink wall" (pink matches wall, not hair)
+
+Similarly, "orange hair woman" returned:
+- IMG_6817.JPG (#2) - "light brown hair...orange chair" (orange matches chair, not hair)
+
+### Root Cause
+
+The keyword matching counted ANY occurrence of query words in the description. For "pink hair":
+- "pink shirt + dark brown hair" had both words present → incorrectly boosted
+- "vibrant pink hair" had both words present → correctly boosted
+
+Both got the same 10% boost, causing misleading matches to rank above true matches.
+
+### Solution
+
+Added spaCy-based adjective-noun relationship checking:
+
+1. **`extract_adjective_noun_pairs()`** - Uses spaCy dependency parsing (amod dependency relations) to extract (adjective, noun) pairs from descriptions (e.g., "pink" → "hair" vs "pink" → "shirt")
+
+2. **`check_adjective_noun_match()`** - Verifies that query words form a valid adjective-noun relationship in the description
+
+3. **Updated tie-breaker logic:**
+   - Exact phrase match: 10% boost
+   - All words present AND adjective modifies correct noun: 10% boost
+   - All words present but adjective modifies WRONG noun: penalty
+   - Partial match (missing words): up to 50% penalty
+   - No match: no adjustment
+
+### Results
+
+**"pink hair" query:**
+- All top 15 results now have actual "pink hair" in descriptions
+- IMG_2373.JPG (brown hair + pink shirt) dropped out of top 15
+- IMG_1632(1).HEIC (blonde hair + pink wall) dropped out of top 15
+
+**"orange hair woman" query:**
+- IMG_6817.JPG (orange chair + brown hair) dropped from #2 to #7
+- Top results now show actual orange/red hair
+
+**Regression tests:**
+- "curly hair": All top 10 have "curly" in descriptions
+- "two dogs": Top result correctly shows two dogs
+
+### Files Modified
+
+- `photo-server/app/search.py` - Added NLP-based adjective-noun matching functions
+
+---
+
+## Previous Activity (2026-03-28) - Fixed Embedding Misalignment
+
+### Root Cause
+
+Query "two dogs" returned a parasailing photo at #2 with no dogs in the description. Investigation revealed:
+
+- **Embeddings array had 8319 entries** but descriptions.json had **8315 photos** (4 extra embeddings)
+- This caused an index offset starting at position 7511
+- **804 photos (10%)** had embeddings that didn't match their descriptions
+- The parasailing photo (IMG_1269(1).HEIC) had a corrupted embedding scoring 0.5964 for "two dogs" when it should score -0.0713
+
+### Solution
+
+Created `scripts/embeddings/repair_embeddings.py` that:
+1. Analyzes mismatches between stored embeddings and fresh encodings
+2. Backs up old embeddings to `embeddings_backup.npy`
+3. Regenerates ALL embeddings from descriptions.json in correct order
+4. Verifies new embeddings match their descriptions
+
+### Results
+
+- Regenerated 8315 embeddings (correct count)
+- Fixed 804 mismatched embeddings
+- "two dogs" query now returns only actual dog photos
+- Parasailing photo not in top 50 results
+- All other queries unchanged
+
+### Files Added
+
+- `scripts/embeddings/repair_embeddings.py` - Embedding repair utility
+
+---
+
+## Previous Activity (2026-03-27) - Compound Phrase Search
 
 ### Implemented spaCy-Based Compound Phrase Search
 
@@ -356,6 +503,7 @@ git push origin main
 ---
 
 **Latest Features:**
+- ✅ NLP-based adjective-noun matching for accurate search ranking
 - ✅ Compound phrase semantic search with spaCy NLP
 - ✅ Bulk photo upload (up to 25 photos)
 - ✅ Browser HTTP Basic Auth only (no custom login)

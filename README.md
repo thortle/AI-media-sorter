@@ -9,9 +9,9 @@ A self-hosted photo library with semantic search powered by AI-generated descrip
 
 - More than **8,000 photos** indexed with AI descriptions (Moondream2 VLM)
 - **Semantic search** using `all-MiniLM-L12-v2` embeddings (384 dimensions)
-- **Hybrid search** with 25% minimum threshold and 500 max results
+- **NLP-based ranking** with spaCy adjective-noun matching for accurate results
+- **Compound phrase search** with weighted scoring for multi-word queries
 - **Query expansion** for compound concepts ("family dinner", "sad people")
-- **Keyword boosting** (+15% per match, max 30%)
 - **FastAPI server** in Docker with HEIC support
 - **Browse All** feature with pagination (500 photos per page)
 - **Filter options** for People, Dogs, and Cars
@@ -135,8 +135,16 @@ Compound concepts are expanded for better matching:
 "sad people"    → "unhappy person crying melancholic distressed face sorrowful"
 ```
 
-### Keyword Boosting
-Exact phrase matches get a boost (+15% per match, max 30%) to prioritize direct matches.
+### NLP-Based Ranking
+
+Uses spaCy dependency parsing to ensure adjectives modify the correct nouns:
+- "pink hair" only matches photos where "pink" describes the hair (not "pink shirt" near "hair")
+- "red car" only matches photos where "red" describes the car (not "red jacket" near "car")
+
+**Scoring:**
+- Exact phrase match or correct adjective-noun relationship: 10% boost
+- Scattered word matches (wrong grammar): 40% penalty
+- Partial matches: up to 50% penalty
 
 ### Browse All
 Click the Browse All button to paginate through all photos (500 per page) with Next/Previous navigation.
@@ -194,6 +202,7 @@ Edit `QUERY_EXPANSIONS` dict in `photo-server/app/search.py` when searches retur
 
 - **VLM**: Moondream2 (description generation)
 - **Embeddings**: sentence-transformers/all-MiniLM-L12-v2 (384 dimensions)
+- **NLP**: spaCy en_core_web_sm (adjective-noun relationship parsing)
 - **Server**: FastAPI + Uvicorn
 - **HEIC Support**: pillow-heif
 - **Tag Validation**: CLIP (openai/clip-vit-base-patch32)
