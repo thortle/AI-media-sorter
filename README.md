@@ -7,11 +7,10 @@ A self-hosted photo library with semantic search powered by AI-generated descrip
 
 ## Current Status
 
-- More than **8,000 photos** indexed with AI descriptions (Moondream2 VLM)
 - **Semantic search** using `all-MiniLM-L12-v2` embeddings (384 dimensions)
 - **NLP-based ranking** with spaCy adjective-noun matching for accurate results
 - **Compound phrase search** with weighted scoring for multi-word queries
-- **Query expansion** for compound concepts ("family dinner", "sad people")
+- **Query expansion** for compound concepts ("family dinner", "pink hair")
 - **FastAPI server** in Docker with HEIC support
 - **Browse All** feature with pagination (500 photos per page)
 - **Filter options** for People, Dogs, and Cars
