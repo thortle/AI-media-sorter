@@ -1,3 +1,7 @@
+# Local documentation (keep local only, not tracked)
+done.md
+tasks/todo.md
+
 # Sensitive files with credentials/personal info
 photo-server/docker-compose.yml
 HOMELAB_SETUP_PLAN.md
