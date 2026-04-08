@@ -210,15 +210,13 @@ Edit `QUERY_EXPANSIONS` dict in `photo-server/app/search.py` when searches retur
 
 ## Security
 
-**Security updates:** Critical CVEs patched in dependencies (python-multipart, FastAPI, Pillow). Stored XSS vulnerabilities fixed. Upload filenames sanitized. See [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for details.
+Current setup has basic authentication. For production use on untrusted networks, consider:
+- Rate limiting
+- Input validation for filenames
+- Audit logging for deletions
 
-**Before first run:**
-1. Copy `.env.example` to `.env` and update with your credentials and paths
-2. Change `AUTH_USERNAME` and `AUTH_PASSWORD` from defaults
-3. Set `HOST_PHOTO_DIR` to your photo directory (same as `PHOTO_DIR`)
-4. On Linux, ensure proper permissions: `sudo chown -R 1000:1000 /path/to/your/photos`
+For a full hardening checklist (credential rotation, branch protection, secret scanning, Docker
+hardening, and a pre-publish audit) see [`SECURITY.md`](SECURITY.md).
 
-**Notes:**
-- Container runs as non-root user (UID 1000) for extra security
-- Basic authentication over HTTP only — use Tailscale/VPN for remote access
-- For sensitive deployments, review [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for complete audit findings
+If you are working across branches or evaluating a security PR while you have local changes,
+see [`docs/safe-merge-workflow.md`](docs/safe-merge-workflow.md) for a step-by-step guide.
